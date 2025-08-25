@@ -1,0 +1,59 @@
+import { Ionicons } from '@expo/vector-icons';
+import { Tabs } from 'expo-router';
+import React from 'react';
+
+import { HapticTab } from '@/components/HapticTab';
+import TabBarBackground from '@/components/ui/TabBarBackground';
+import { Colors } from '@/constants/Colors';
+import { useColorScheme } from '@/hooks/useColorScheme';
+
+// Centralized tab configuration so you only update in one place
+const TAB_ITEMS = [
+  { name: 'index', title: 'Dashboard', icon: 'home' },
+  { name: 'face-recognition', title: 'Scanner', icon: 'camera' },
+  { name: 'schedule', title: 'Schedule', icon: 'calendar' },
+  { name: 'attendance-record', title: 'Record', icon: 'people-outline' },
+  { name: 'profile', title: 'Profile', icon: 'person' },
+];
+
+export default function TabLayout() {
+  const colorScheme = useColorScheme();
+
+  return (
+    <Tabs
+      screenOptions={{
+        tabBarActiveTintColor: Colors.primary,
+        tabBarInactiveTintColor: '#999999',
+        headerShown: false,
+        tabBarButton: HapticTab,
+        tabBarBackground: TabBarBackground,
+        tabBarStyle: {
+          backgroundColor: '#ffffff',
+          borderTopWidth: 1,
+          borderTopColor: '#e9ecef',
+          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: '500',
+          marginTop: 4,
+        },
+      }}
+    >
+      {TAB_ITEMS.map((tab) => (
+        <Tabs.Screen
+          key={tab.name}
+          name={tab.name}
+          options={{
+            title: tab.title,
+            tabBarIcon: ({ color }) => (
+              <Ionicons name={tab.icon as any} size={24} color={color} />
+            ),
+          }}
+        />
+      ))}
+    </Tabs>
+  );
+}

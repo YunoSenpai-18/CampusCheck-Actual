@@ -13,14 +13,35 @@ export default function RootLayout() {
   });
 
   if (!loaded) {
-    // Async font loading only occurs in development.
     return null;
   }
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="index"
+          options={{ headerShown: false }}
+        />
+
+        {/* Auth group (login, register, etc.) */}
+        <Stack.Screen
+          name="(auth)"
+          options={{ headerShown: false }}
+        />
+
+        {/* Main tabs group */}
+        <Stack.Screen
+          name="(admin)"
+          options={{ headerShown: false }}
+        />
+
+        <Stack.Screen
+          name="(checker)"
+          options={{ headerShown: false }}
+        />
+
+        {/* Not found page */}
         <Stack.Screen name="+not-found" />
       </Stack>
       <StatusBar style="auto" />
