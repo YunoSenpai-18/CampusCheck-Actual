@@ -70,6 +70,7 @@ export default function LoginScreen() {
             Alert.alert('Error', 'Unknown role, cannot login');
           }
         };
+        navigateByRole();
       } else {
         Alert.alert('Error', 'Unexpected response from server');
       }
