@@ -10,9 +10,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 // Centralized tab configuration for Admin interface
 const ADMIN_TAB_ITEMS = [
   { name: 'index', title: 'Instructor', icon: 'school-outline' },
-  { name: 'scanner', title: 'Scanner', icon: 'camera' },
-  { name: 'records', title: 'Records', icon: 'people-outline' },
   { name: 'camp-schedule', title: 'Schedule', icon: 'calendar' },
+  { name: 'records', title: 'Records', icon: 'people-outline' },
   { name: 'profile', title: 'Profile', icon: 'person' },
 ];
 

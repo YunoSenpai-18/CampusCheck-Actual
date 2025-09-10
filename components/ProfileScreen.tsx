@@ -1,41 +1,63 @@
 import Header from '@/components/ui/Header';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import {
+  ActivityIndicator,
+  Alert,
+  SafeAreaView,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 
 export default function ProfileScreen() {
   const router = useRouter();
 
-  // State for profile data
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  const handleLogout = () => {
-    // TODO: Clear user token/session here
+  const handleLogout = async () => {
+    await AsyncStorage.removeItem('token');
     router.replace('/(auth)/login');
   };
 
-  // Simulated fetch from API (replace with real API later)
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        // Example placeholder fetch
-        // const res = await fetch('https://your-api.com/profile');
-        // const data = await res.json();
+        const token = await AsyncStorage.getItem('token');
+        if (!token) {
+          Alert.alert('Error', 'No token found, please login again.');
+          handleLogout();
+          return;
+        }
+        // Expose public domain here
+        const res = await fetch('https://benfscwxlf.sharedwithexpose.com/api/user', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/json',
+          },
+        });
 
-        // Mock data for now
-        const data = {
-          name: 'John Doe',
-          role: 'Checker',
-          id: 'STU2024001',
-          email: 'john.doe@campus.edu',
-          phone: '+1 (555) 123-4567'
-        };
+        if (!res.ok) {
+          throw new Error(`Failed to fetch profile: ${res.status}`);
+        }
 
-        setProfile(data);
+        const data = await res.json();
+
+        setProfile({
+          name: data.full_name,
+          role: data.role,
+          id: data.school_id,
+          email: data.email,
+          phone: data.phone,
+        });
       } catch (error) {
         console.error('Error fetching profile:', error);
+        Alert.alert('Error', 'Unable to load profile data');
       } finally {
         setLoading(false);
       }
@@ -45,8 +67,7 @@ export default function ProfileScreen() {
   }, []);
 
   const menuItems = [
-    { id: 3, title: 'About', icon: 'information-circle', color: '#ffc107' },
-    { id: 4, title: 'Logout', icon: 'log-out', color: '#dc3545' },
+    { id: 1, title: 'Logout', icon: 'log-out', color: '#dc3545' },
   ];
 
   if (loading) {
@@ -55,6 +76,17 @@ export default function ProfileScreen() {
         <Header title="Profile" onProfilePress={() => {}} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#007AFF" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!profile) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <Header title="Profile" onProfilePress={() => {}} />
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text style={{ color: '#666' }}>No profile data found.</Text>
         </View>
       </SafeAreaView>
     );
@@ -99,7 +131,7 @@ export default function ProfileScreen() {
             </View>
             <View style={styles.infoRow}>
               <Text style={styles.infoLabel}>Phone</Text>
-              <Text style={styles.infoValue}>{profile.phone}</Text>
+              <Text style={styles.infoValue}>{profile.phone || '-'}</Text>
             </View>
           </View>
         </View>
@@ -107,16 +139,10 @@ export default function ProfileScreen() {
         {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item) => (
-            <TouchableOpacity 
-              key={item.id} 
+            <TouchableOpacity
+              key={item.id}
               style={styles.menuItem}
-              onPress={() => {
-                if (item.id === 4) {
-                  handleLogout();
-                } else {
-                  console.log('Menu item pressed:', item.title);
-                }
-              }}
+              onPress={handleLogout}
             >
               <View style={styles.menuItemLeft}>
                 <Ionicons name={item.icon as any} size={24} color={item.color} />
@@ -150,13 +176,21 @@ const styles = StyleSheet.create({
     borderColor: '#f1f3f4',
   },
   profilePhoto: {
-    width: 80, height: 80, borderRadius: 40,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: '#f8f9fa',
-    justifyContent: 'center', alignItems: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginRight: 16,
   },
   profileInfo: { flex: 1 },
-  profileName: { fontSize: 20, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 4 },
+  profileName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1a1a1a',
+    marginBottom: 4,
+  },
   profileRole: { fontSize: 16, color: '#007AFF', marginBottom: 4 },
   profileId: { fontSize: 14, color: '#666666' },
   section: {
@@ -178,9 +212,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#f1f3f4',
   },
-  sectionTitle: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginLeft: 8 },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1a1a1a',
+    marginLeft: 8,
+  },
   sectionContent: { padding: 16 },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 8 },
+  infoRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+  },
   infoLabel: { fontSize: 14, color: '#666666' },
   infoValue: { fontSize: 14, fontWeight: '500', color: '#1a1a1a' },
   menuSection: {

@@ -42,7 +42,17 @@ export default function RootLayout() {
         />
 
         {/* Not found page */}
-        <Stack.Screen name="+not-found" />
+        <Stack.Screen 
+          name="+not-found"
+          options={{ headerShown: false }}
+        />
+
+        {/* Create page */}
+        <Stack.Screen
+          name="create-instructors"
+          options={{ headerShown: false }}
+        />
+        
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

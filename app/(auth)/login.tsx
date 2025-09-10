@@ -1,5 +1,7 @@
 import AuthButton from '@/components/auth/AuthButton';
 import AuthInput from '@/components/auth/AuthInput';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import React, { useCallback, useState } from 'react';
@@ -16,25 +18,12 @@ import {
 } from 'react-native';
 
 // Constants
-const EMAIL_PLACEHOLDER = 'name@cdd.edu.ph';
+const SCHOOL_ID_PLACEHOLDER = '22-0000-000';
 const PASSWORD_PLACEHOLDER = '********';
 
-// Temporary backend login (replace with API later)
-async function loginWithEmail(email: string, password: string) {
-  return new Promise<{ success: boolean; role?: string }>((resolve) => {
-    setTimeout(() => {
-      if (email === 'admin@gmail.com' && password === '1234') {
-        resolve({ success: true, role: 'admin' });
-      } else if (email === 'checker@gmail.com' && password === '1234') {
-        resolve({ success: true, role: 'checker' });
-      } else {
-        resolve({ success: false });
-      }
-    }, 800);
-  });
-}
+// Expose public domain here
+const API_URL = 'https://benfscwxlf.sharedwithexpose.com/api';
 
-// ✅ Logo component
 function Logo() {
   return (
     <Image
@@ -47,39 +36,52 @@ function Logo() {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const [email, setEmail] = useState('');
+  const [schoolId, setSchoolId] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
 
   const handleSignIn = useCallback(async () => {
-    if (!email || !password) {
+    if (!schoolId || !password) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
 
     try {
-      const result = await loginWithEmail(email, password);
+      setLoading(true);
 
-      if (result.success) {
-        Alert.alert('Success', 'Login successful!', [
-          {
-            text: 'OK',
-            onPress: () => {
-              if (result.role === 'admin') {
-                router.replace('/(admin)');
-              } else {
-                router.replace('/(checker)');
-              }
-            },
-          },
-        ]);
+      const res = await axios.post(`${API_URL}/login`, {
+        school_id: schoolId,
+        password: password,
+      });
+
+      const { access_token, user } = res.data;
+
+      if (access_token && user) {
+        // Save token + user in AsyncStorage
+        await AsyncStorage.setItem('token', access_token);
+        await AsyncStorage.setItem('user', JSON.stringify(user));
+
+        const navigateByRole = () => {
+          if (user.role === 'Admin') {
+            router.replace('/(admin)');
+          } else if (user.role === 'Checker') {
+            router.replace('/(checker)');
+          } else {
+            Alert.alert('Error', 'Unknown role, cannot login');
+          }
+        };
       } else {
-        Alert.alert('Error', 'Invalid email or password');
+        Alert.alert('Error', 'Unexpected response from server');
       }
-    } catch (error) {
-      console.error('Login error:', error);
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+    } catch (error: any) {
+      Alert.alert(
+        'Login Failed',
+        error.response?.data?.message || 'Could not connect to server'
+      );
+    } finally {
+      setLoading(false);
     }
-  }, [email, password, router]);
+  }, [schoolId, password, router]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -94,23 +96,18 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.content}>
-            {/* App Logo */}
             <Logo />
-
-            {/* Title */}
             <Text style={styles.title}>Sign in to your account</Text>
             <Text style={styles.subtitle}>
-              Enter your credentials to continue
+              Enter your School ID and Password
             </Text>
 
-            {/* Form */}
             <View style={styles.form}>
               <AuthInput
-                label="Email"
-                placeholder={EMAIL_PLACEHOLDER}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
+                label="School ID"
+                placeholder={SCHOOL_ID_PLACEHOLDER}
+                value={schoolId}
+                onChangeText={setSchoolId}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
@@ -126,23 +123,10 @@ export default function LoginScreen() {
               />
 
               <AuthButton
-                title="Sign In"
+                title={loading ? 'Signing In...' : 'Sign In'}
                 onPress={handleSignIn}
+                disabled={loading}
                 style={styles.signInButton}
-              />
-            </View>
-
-            {/* --- Quick Role Login Buttons (for testing only) --- */}
-            <View style={styles.tempButtons}>
-              <AuthButton
-                title="Login as Checker"
-                onPress={() => router.replace('/(checker)')}
-                style={{ backgroundColor: '#34C759' }}
-              />
-              <AuthButton
-                title="Login as Admin"
-                onPress={() => router.replace('/(admin)')}
-                style={{ backgroundColor: '#FF9500' }}
               />
             </View>
           </View>
@@ -155,13 +139,13 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#ffffff' 
   },
   keyboardView: {
-    flex: 1,
+    flex: 1 
   },
   scrollContent: {
-    flexGrow: 1,
+    flexGrow: 1 
   },
   content: {
     flex: 1,
@@ -170,7 +154,7 @@ const styles = StyleSheet.create({
     paddingVertical: 24,
   },
   logo: {
-    width: 120, // adjust size
+    width: 120,
     height: 120,
     alignSelf: 'center',
     marginBottom: 24,
@@ -190,13 +174,9 @@ const styles = StyleSheet.create({
   },
   form: {
     gap: 24,
-    marginBottom: 32,
+    marginBottom: 32 
   },
   signInButton: {
-    marginTop: 8,
-  },
-  tempButtons: {
-    marginTop: 24,
-    gap: 12,
+    marginTop: 8 
   },
 });

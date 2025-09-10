@@ -1,5 +1,5 @@
-import { Redirect, type Href } from "expo-router";
+import { Redirect } from "expo-router";
 
 export default function Index() {
-  return <Redirect href={"/(auth)/login" as Href} />;
+  return <Redirect href={"/(auth)/login"} />;
 }

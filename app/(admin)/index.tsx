@@ -1,16 +1,22 @@
 import Header from '@/components/ui/Header';
-import { Picker } from '@react-native-picker/picker';
+import { deleteInstructor, fetchInstructors } from '@/services/instructorApi';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native'; // refresh when screen is focused
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 
 type Instructor = {
   id: number;
@@ -19,117 +25,147 @@ type Instructor = {
   course: string;
   email: string;
   phone: string;
-  photo?: string;
 };
 
 export default function InstructorScreen() {
   const router = useRouter();
 
-  const navigateToProfile = () => {
-    router.push('/(admin)/profile');
-  };
-
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
   const [nameFilter, setNameFilter] = useState('');
   const [idFilter, setIdFilter] = useState('');
   const [courseFilter, setCourseFilter] = useState('');
 
-  const fetchInstructors = async () => {
+  // dropdown state
+  const [open, setOpen] = useState(false);
+  const [items, setItems] = useState([
+    { label: 'All Courses', value: '' },
+    { label: 'SITE', value: 'SITE' },
+    { label: 'SOE', value: 'SOE' },
+    { label: 'SOHS', value: 'SOHS' },
+    { label: 'SOC', value: 'SOC' },
+    { label: 'SBA', value: 'SBA' },
+    { label: 'SIHM', value: 'SIHM' },
+  ]);
+
+  const loadInstructors = async () => {
     try {
       setLoading(true);
-      const data: Instructor[] = [
-        {
-          id: 1,
-          full_name: 'Jelson V. Lanto',
-          instructor_id: '22-0001-000',
-          course: 'SITE',
-          email: 'jelson@cdd.edu.ph',
-          phone: '09123456789',
-        },
-        {
-          id: 2,
-          full_name: 'Yuri Rancudo',
-          instructor_id: '22-0002-000',
-          course: 'SOE',
-          email: 'yuri@cdd.edu.ph',
-          phone: '09987654321',
-        },
-      ];
+      const data = await fetchInstructors();
       setInstructors(data);
     } catch (error) {
       console.error('Failed to fetch instructors:', error);
+      setInstructors([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchInstructors();
-  }, []);
+  // refresh on focus
+  useFocusEffect(
+    useCallback(() => {
+      loadInstructors();
+    }, [])
+  );
+
+  // pull-to-refresh
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadInstructors();
+    setRefreshing(false);
+  };
+
+  const handleDelete = async (id: number) => {
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this instructor?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteInstructor(id);
+            loadInstructors(); // refresh list
+          } catch (err) {
+            Alert.alert('Error', 'Failed to delete instructor.');
+          }
+        },
+      },
+    ]);
+  };
 
   const filteredInstructors = instructors.filter((inst) => {
     return (
-      inst.full_name.toLowerCase().includes(nameFilter.toLowerCase()) &&
-      inst.instructor_id.toLowerCase().includes(idFilter.toLowerCase()) &&
+      inst.full_name?.toLowerCase().includes(nameFilter.toLowerCase()) &&
+      inst.instructor_id?.toLowerCase().includes(idFilter.toLowerCase()) &&
       (courseFilter === '' || inst.course === courseFilter)
     );
   });
 
+  const clearFilters = () => {
+    setNameFilter('');
+    setIdFilter('');
+    setCourseFilter('');
+  };
+
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Instructor" onProfilePress={navigateToProfile} />
+      <Header title="Instructor" onProfilePress={() => router.push('/(admin)/profile')} />
 
       {/* Filters */}
-      <View style={styles.filterBar}>
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Name"
-          value={nameFilter}
-          onChangeText={setNameFilter}
-        />
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Instructor ID"
-          value={idFilter}
-          onChangeText={setIdFilter}
-        />
+      <View style={styles.filterWrapper}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Name"
+            value={nameFilter}
+            onChangeText={setNameFilter}
+          />
 
-        <View style={styles.pickerChip}>
-          <Picker
-            selectedValue={courseFilter}
-            onValueChange={(value) => setCourseFilter(value)}
-            style={styles.picker}
-          >
-            <Picker.Item label="All Course" value="" />
-            <Picker.Item label="SITE" value="SITE" />
-            <Picker.Item label="SOE" value="SOE" />
-            <Picker.Item label="SOHS" value="SOHS" />
-            <Picker.Item label="SOC" value="SOC" />
-            <Picker.Item label="SBA" value="SBA" />
-          </Picker>
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Instructor ID"
+            value={idFilter}
+            onChangeText={setIdFilter}
+          />
+
+          <View style={{ flex: 1, zIndex: 3000 }}>
+            <DropDownPicker
+              open={open}
+              value={courseFilter}
+              items={items}
+              setOpen={setOpen}
+              setValue={(callback) => {
+                const value = callback(courseFilter);
+                setCourseFilter(value);
+              }}
+              setItems={setItems}
+              placeholder="Select Course"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownMenu}
+              zIndex={3000}
+              zIndexInverse={1000}
+            />
+          </View>
+
+          {nameFilter || idFilter || courseFilter ? (
+            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+              <Text style={styles.clearButtonText}>✕ Clear</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
-
-        {nameFilter || idFilter || courseFilter ? (
-          <Text
-            style={styles.clearButton}
-            onPress={() => {
-              setNameFilter('');
-              setIdFilter('');
-              setCourseFilter('');
-            }}
-          >
-            ✕ Clear
-          </Text>
-        ) : null}
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {loading ? (
           <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
         ) : filteredInstructors.length === 0 ? (
-          <Text style={styles.noResults}>No instructors found.</Text>
+          <Text style={styles.noResults}>No Record Found</Text>
         ) : (
           filteredInstructors.map((inst) => (
             <View key={inst.id} style={styles.card}>
@@ -138,37 +174,41 @@ export default function InstructorScreen() {
               <Text style={styles.detail}>Course: {inst.course}</Text>
               <Text style={styles.detail}>Email: {inst.email}</Text>
               <Text style={styles.detail}>Phone: {inst.phone}</Text>
+
+              {/* Delete Button Only */}
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
+                  onPress={() => handleDelete(inst.id)}
+                >
+                  <Text style={styles.actionText}>Delete</Text>
+                </TouchableOpacity>
+              </View>
             </View>
           ))
         )}
       </ScrollView>
+
+      {/* Floating Create Button */}
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/create-instructors')}>
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: '#ffffff',
-  },
-  filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  container: { flex: 1, backgroundColor: '#ffffff' },
+  content: { flex: 1, padding: 20, backgroundColor: '#ffffff' },
+  filterWrapper: {
     borderBottomWidth: 1,
     borderBottomColor: '#f1f3f4',
     backgroundColor: '#fafafa',
-    flexWrap: 'wrap',
-    gap: 8, // if not supported, use marginRight manually
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    zIndex: 1000,
   },
   filterChip: {
-    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1,
@@ -176,39 +216,25 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     fontSize: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    minWidth: 100,
-    marginBottom: 6,
-  },
-  pickerChip: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
     minWidth: 120,
-    marginBottom: 6,
+    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  picker: {
-    height: 40,
-    width: '100%',
-  },
+  dropdown: { borderRadius: 20, borderColor: '#e0e0e0', minHeight: 40 },
+  dropdownMenu: { borderRadius: 12, borderColor: '#e0e0e0' },
   clearButton: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
-    paddingHorizontal: 8,
-    marginBottom: 6,
+    backgroundColor: '#f1f3f4',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
+  clearButtonText: { color: '#007AFF', fontWeight: '500', fontSize: 14 },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -222,21 +248,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f3f4',
   },
-  name: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 6,
-  },
-  detail: {
-    fontSize: 14,
-    color: '#666666',
-    marginBottom: 2,
-  },
+  name: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginBottom: 6 },
+  detail: { fontSize: 14, color: '#666666', marginBottom: 2 },
   noResults: {
     fontSize: 14,
     color: '#888888',
     textAlign: 'center',
     marginTop: 40,
   },
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#007AFF',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+  },
+  actions: { flexDirection: 'row', marginTop: 10, gap: 8 },
+  actionBtn: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  actionText: { color: '#fff', fontWeight: '600' },
 });
