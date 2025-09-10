@@ -19,13 +19,13 @@ export default function CreateInstructorScreen() {
 
   const [fullName, setFullName] = useState('');
   const [instructorId, setInstructorId] = useState('');
-  const [course, setCourse] = useState('');
+  const [department, setDepartment] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!fullName || !instructorId || !course || !email || !phone) {
+    if (!fullName || !instructorId || !department || !email || !phone) {
       Alert.alert('Validation Error', 'All fields are required');
       return;
     }
@@ -33,7 +33,7 @@ export default function CreateInstructorScreen() {
     const newInstructor = {
       full_name: fullName,
       instructor_id: instructorId,
-      course,
+      department,
       email,
       phone,
     };
@@ -44,7 +44,7 @@ export default function CreateInstructorScreen() {
 
       if (res?.id) {
         Alert.alert('Success', 'Instructor created successfully');
-        router.back(); // ✅ navigate back to list
+        router.back();
       } else {
         Alert.alert('Error', res?.message || 'Failed to create instructor');
       }
@@ -57,7 +57,10 @@ export default function CreateInstructorScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Add Instructor" onProfilePress={() => router.push('/(admin)/profile')} />
+      <Header
+        title="Add Instructor"
+        onProfilePress={() => router.push('/(admin)/profile')}
+      />
 
       <ScrollView contentContainerStyle={styles.form}>
         <TextInput
@@ -74,15 +77,16 @@ export default function CreateInstructorScreen() {
           onChangeText={setInstructorId}
         />
 
-        {/* Course Dropdown */}
+        {/* Department Dropdown */}
+        <Text style={styles.label}>Select Department</Text>
         <View style={styles.dropdownWrapper}>
           <Picker
-            selectedValue={course}
-            onValueChange={(value) => setCourse(value)}
+            selectedValue={department}
+            onValueChange={(value) => setDepartment(value)}
             style={styles.picker}
             dropdownIconColor="#007AFF"
           >
-            <Picker.Item label="Select Course" value="" />
+            <Picker.Item label="-- Select Department --" value="" />
             <Picker.Item label="SITE" value="SITE" />
             <Picker.Item label="SOE" value="SOE" />
             <Picker.Item label="SOHS" value="SOHS" />
@@ -114,7 +118,9 @@ export default function CreateInstructorScreen() {
           onPress={handleSubmit}
           disabled={loading}
         >
-          <Text style={styles.submitText}>{loading ? 'Creating...' : 'Create'}</Text>
+          <Text style={styles.submitText}>
+            {loading ? 'Creating...' : 'Create'}
+          </Text>
         </TouchableOpacity>
 
         {/* Cancel / Back Button */}
@@ -146,6 +152,12 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 2,
     elevation: 1,
+  },
+  label: {
+    fontSize: 15,
+    fontWeight: '500',
+    marginBottom: 6,
+    color: '#333',
   },
   dropdownWrapper: {
     borderRadius: 12,

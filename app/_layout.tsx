@@ -52,6 +52,12 @@ export default function RootLayout() {
           name="create-instructors"
           options={{ headerShown: false }}
         />
+
+        {/* Create page */}
+        <Stack.Screen
+          name="create-schedules"
+          options={{ headerShown: false }}
+        />
         
       </Stack>
       <StatusBar style="auto" />

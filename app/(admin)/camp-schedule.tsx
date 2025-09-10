@@ -1,18 +1,23 @@
 import Header from '@/components/ui/Header';
-import { Picker } from '@react-native-picker/picker';
+import { deleteSchedule, fetchSchedules } from '@/services/scheduleApi';
+import { Ionicons } from '@expo/vector-icons';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   ActivityIndicator,
+  Alert,
+  RefreshControl,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 
-// 🔹 Matches your backend Schedule schema
 type ScheduleItem = {
   id: number;
   subject_code: string;
@@ -21,85 +26,104 @@ type ScheduleItem = {
   block: string;
   day: string;
   time: string;
-  instructor_name: string;
+  instructor: {
+    id: number;
+    full_name: string;
+    department: string;
+    email: string;
+    phone: string;
+  };
+  checker: {
+    id: number;
+    full_name: string;
+    email: string;
+    phone: string | null;
+    role: 'Checker' | 'Admin';
+  };
 };
 
 export default function CampScheduleScreen() {
   const router = useRouter();
 
-  const navigateToProfile = () => {
-    router.push('/(admin)/profile');
-  };
-
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  // Filters
   const [dayFilter, setDayFilter] = useState('');
   const [timeFilter, setTimeFilter] = useState('');
   const [roomFilter, setRoomFilter] = useState('');
   const [blockFilter, setBlockFilter] = useState('');
   const [instructorFilter, setInstructorFilter] = useState('');
 
-  // 🔹 Simulated API call (replace with Laravel API later)
-  const fetchSchedule = async () => {
+  // dropdown state
+  const [openDay, setOpenDay] = useState(false);
+  const [openTime, setOpenTime] = useState(false);
+
+  const loadSchedules = async () => {
     try {
       setLoading(true);
-      const data: ScheduleItem[] = [
-        {
-          id: 1,
-          subject_code: 'ITP17',
-          subject: 'Advanced Programming',
-          room: 'V209',
-          block: '33-ITE-01',
-          day: 'Monday',
-          time: '8:00AM - 12:00PM',
-          instructor_name: 'Jelson V. Lanto',
-        },
-        {
-          id: 2,
-          subject_code: 'ITP16',
-          subject: 'Information Assurance and Security',
-          room: 'V401',
-          block: '33-ITE-02',
-          day: 'Monday',
-          time: '8:00AM - 12:00PM',
-          instructor_name: 'Yuri Rancudo',
-        },
-        {
-          id: 3,
-          subject_code: 'ITP18',
-          subject: 'Database Systems',
-          room: 'V303',
-          block: '33-ITE-03',
-          day: 'Tuesday',
-          time: '1:00PM - 5:00PM',
-          instructor_name: 'Alice Santos',
-        },
-      ];
-
+      const data = await fetchSchedules();
       setScheduleItems(data);
     } catch (error) {
-      console.error('Failed to fetch schedule:', error);
+      console.error('Failed to fetch schedules:', error);
+      setScheduleItems([]);
     } finally {
       setLoading(false);
     }
   };
 
-  useEffect(() => {
-    fetchSchedule();
-  }, []);
-
-  // Generate unique values for filters
-  const uniqueTimes = Array.from(new Set(scheduleItems.map((i) => i.time)));
-  const uniqueRooms = Array.from(new Set(scheduleItems.map((i) => i.room)));
-  const uniqueBlocks = Array.from(new Set(scheduleItems.map((i) => i.block)));
-  const uniqueInstructors = Array.from(
-    new Set(scheduleItems.map((i) => i.instructor_name))
+  useFocusEffect(
+    useCallback(() => {
+      loadSchedules();
+    }, [])
   );
 
-  // Show **all weekdays** for Day filter
-  const allDays = [
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadSchedules();
+    setRefreshing(false);
+  };
+
+  const handleDelete = async (id: number) => {
+    Alert.alert('Confirm Delete', 'Are you sure you want to delete this schedule?', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Delete',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await deleteSchedule(id);
+            loadSchedules();
+          } catch (err) {
+            Alert.alert('Error', 'Failed to delete schedule.');
+          }
+        },
+      },
+    ]);
+  };
+
+  const filteredSchedules = scheduleItems.filter((item) => {
+    return (
+      (dayFilter === '' || item.day === dayFilter) &&
+      (timeFilter === '' || item.time === timeFilter) &&
+      (roomFilter === '' || item.room.toLowerCase().includes(roomFilter.toLowerCase())) &&
+      (blockFilter === '' || item.block.toLowerCase().includes(blockFilter.toLowerCase())) &&
+      (instructorFilter === '' ||
+        item.instructor?.full_name.toLowerCase().includes(instructorFilter.toLowerCase()))
+    );
+  });
+
+  const clearFilters = () => {
+    setDayFilter('');
+    setTimeFilter('');
+    setRoomFilter('');
+    setBlockFilter('');
+    setInstructorFilter('');
+  };
+
+  // dropdown options
+  const dayOptions = [
+    { label: 'All Days', value: '' },
     'Monday',
     'Tuesday',
     'Wednesday',
@@ -107,121 +131,118 @@ export default function CampScheduleScreen() {
     'Friday',
     'Saturday',
     'Sunday',
-  ];
+  ].map((d) => (typeof d === 'string' ? { label: d, value: d } : d));
 
-  // Apply filters
-  const filteredSchedule = scheduleItems.filter((item) => {
-    return (
-      (dayFilter === '' || item.day === dayFilter) &&
-      (timeFilter === '' || item.time === timeFilter) &&
-      (roomFilter === '' || item.room.toLowerCase().includes(roomFilter.toLowerCase())) &&
-      (blockFilter === '' || item.block.toLowerCase().includes(blockFilter.toLowerCase())) &&
-      (instructorFilter === '' ||
-        item.instructor_name.toLowerCase().includes(instructorFilter.toLowerCase()))
-    );
-  });
+  const timeOptions = Array.from(new Set(scheduleItems.map((i) => i.time))).map((t) => ({
+    label: t,
+    value: t,
+  }));
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header title="Schedule" onProfilePress={navigateToProfile} />
+      <Header title="Schedule" onProfilePress={() => router.push('/(admin)/profile')} />
 
       {/* Filters */}
-      <View style={styles.filterBar}>
-        {/* Day */}
-        <View style={styles.pickerChip}>
-          <Picker
-            selectedValue={dayFilter}
-            onValueChange={(value) => setDayFilter(value)}
-            style={styles.picker}
-          >
-            <Picker.Item label="All Days" value="" />
-            {allDays.map((day) => (
-              <Picker.Item key={day} label={day} value={day} />
-            ))}
-          </Picker>
+      <View style={styles.filterWrapper}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+          <View style={{ flex: 1, zIndex: 3000 }}>
+            <DropDownPicker
+              open={openDay}
+              value={dayFilter}
+              items={dayOptions}
+              setOpen={setOpenDay}
+              setValue={(cb) => setDayFilter(cb(dayFilter))}
+              placeholder="Select Day"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownMenu}
+              zIndex={3000}
+              zIndexInverse={1000}
+            />
+          </View>
+
+          <View style={{ flex: 1, zIndex: 2000 }}>
+            <DropDownPicker
+              open={openTime}
+              value={timeFilter}
+              items={[{ label: 'All Times', value: '' }, ...timeOptions]}
+              setOpen={setOpenTime}
+              setValue={(cb) => setTimeFilter(cb(timeFilter))}
+              placeholder="Select Time"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownMenu}
+              zIndex={2000}
+              zIndexInverse={2000}
+            />
+          </View>
+
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Room"
+            value={roomFilter}
+            onChangeText={setRoomFilter}
+          />
+
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Block"
+            value={blockFilter}
+            onChangeText={setBlockFilter}
+          />
+
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Instructor"
+            value={instructorFilter}
+            onChangeText={setInstructorFilter}
+          />
+
+          {dayFilter || timeFilter || roomFilter || blockFilter || instructorFilter ? (
+            <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
+              <Text style={styles.clearButtonText}>✕ Clear</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
-
-        {/* Time */}
-        <View style={styles.pickerChip}>
-          <Picker
-            selectedValue={timeFilter}
-            onValueChange={(value) => setTimeFilter(value)}
-            style={styles.picker}
-          >
-            <Picker.Item label="All Times" value="" />
-            {uniqueTimes.map((time) => (
-              <Picker.Item key={time} label={time} value={time} />
-            ))}
-          </Picker>
-        </View>
-
-        {/* Room (search input) */}
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Room"
-          value={roomFilter}
-          onChangeText={setRoomFilter}
-        />
-
-        {/* Block (search input) */}
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Block"
-          value={blockFilter}
-          onChangeText={setBlockFilter}
-        />
-
-        {/* Instructor (search input) */}
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Instructor"
-          value={instructorFilter}
-          onChangeText={setInstructorFilter}
-        />
-
-        {dayFilter || timeFilter || roomFilter || blockFilter || instructorFilter ? (
-          <Text
-            style={styles.clearButton}
-            onPress={() => {
-              setDayFilter('');
-              setTimeFilter('');
-              setRoomFilter('');
-              setBlockFilter('');
-              setInstructorFilter('');
-            }}
-          >
-            ✕ Clear
-          </Text>
-        ) : null}
       </View>
 
       {/* Schedule List */}
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+      >
         {loading ? (
           <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
-        ) : filteredSchedule.length === 0 ? (
-          <Text style={styles.noResults}>No schedules found.</Text>
+        ) : filteredSchedules.length === 0 ? (
+          <Text style={styles.noResults}>No Record Found</Text>
         ) : (
-          filteredSchedule.map((item) => (
-            <View key={item.id} style={styles.scheduleItem}>
-              <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{item.time}</Text>
-              </View>
-              <View style={styles.itemContent}>
-                <Text style={styles.itemTitle}>
-                  {item.subject_code} | {item.subject}
-                </Text>
-                <Text style={styles.itemLocation}>Room: {item.room}</Text>
-                <Text style={styles.itemLocation}>Block: {item.block}</Text>
-                <Text style={styles.itemLocation}>Day: {item.day}</Text>
-                <Text style={styles.itemDescription}>
-                  Instructor: {item.instructor_name}
-                </Text>
+          filteredSchedules.map((item) => (
+            <View key={item.id} style={styles.card}>
+              <Text style={styles.name}>
+                {item.subject_code} | {item.subject}
+              </Text>
+              <Text style={styles.detail}>Day: {item.day}</Text>
+              <Text style={styles.detail}>Time: {item.time}</Text>
+              <Text style={styles.detail}>Room: {item.room}</Text>
+              <Text style={styles.detail}>Block: {item.block}</Text>
+              <Text style={styles.detail}>Instructor: {item.instructor?.full_name}</Text>
+              <Text style={styles.detail}>Checker: {item.checker?.full_name}</Text>
+
+              <View style={styles.actions}>
+                <TouchableOpacity
+                  style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
+                  onPress={() => handleDelete(item.id)}
+                >
+                  <Text style={styles.actionText}>Delete</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))
         )}
       </ScrollView>
+
+      <TouchableOpacity style={styles.fab} onPress={() => router.push('/create-schedules')}>
+        <Ionicons name="add" size={28} color="#fff" />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -229,19 +250,15 @@ export default function CampScheduleScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   content: { flex: 1, padding: 20, backgroundColor: '#ffffff' },
-  filterBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+  filterWrapper: {
     borderBottomWidth: 1,
     borderBottomColor: '#f1f3f4',
     backgroundColor: '#fafafa',
-    flexWrap: 'wrap',
-    gap: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    zIndex: 1000,
   },
   filterChip: {
-    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1,
@@ -249,38 +266,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     fontSize: 14,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-    minWidth: 100,
-    marginBottom: 6,
-  },
-  pickerChip: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 20,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
     minWidth: 120,
-    marginBottom: 6,
+    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  picker: { height: 40, width: '100%' },
+  dropdown: { borderRadius: 20, borderColor: '#e0e0e0', minHeight: 40 },
+  dropdownMenu: { borderRadius: 12, borderColor: '#e0e0e0' },
   clearButton: {
-    color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
-    paddingHorizontal: 8,
-    marginBottom: 6,
+    backgroundColor: '#f1f3f4',
+    borderRadius: 20,
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
-  scheduleItem: {
-    flexDirection: 'row',
+  clearButtonText: { color: '#007AFF', fontWeight: '500', fontSize: 14 },
+  card: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
@@ -293,26 +298,36 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#f1f3f4',
   },
-  timeContainer: { marginRight: 16, alignItems: 'center', width: 90 },
-  timeText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#007AFF',
-    textAlign: 'center',
-  },
-  itemContent: { flex: 1 },
-  itemTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1a1a1a',
-    marginBottom: 4,
-  },
-  itemLocation: { fontSize: 14, color: '#666666', marginBottom: 2 },
-  itemDescription: { fontSize: 13, color: '#888888', marginTop: 2 },
+  name: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginBottom: 6 },
+  detail: { fontSize: 14, color: '#666666', marginBottom: 2 },
   noResults: {
     fontSize: 14,
     color: '#888888',
     textAlign: 'center',
     marginTop: 40,
   },
+  fab: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
+    backgroundColor: '#007AFF',
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 5,
+  },
+  actions: { flexDirection: 'row', marginTop: 10, gap: 8 },
+  actionBtn: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  actionText: { color: '#fff', fontWeight: '600' },
 });

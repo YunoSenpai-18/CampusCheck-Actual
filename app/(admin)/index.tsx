@@ -1,7 +1,7 @@
 import Header from '@/components/ui/Header';
 import { deleteInstructor, fetchInstructors } from '@/services/instructorApi';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native'; // refresh when screen is focused
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
 import React, { useCallback, useState } from 'react';
 import {
@@ -22,7 +22,7 @@ type Instructor = {
   id: number;
   full_name: string;
   instructor_id: string;
-  course: string;
+  department: string;
   email: string;
   phone: string;
 };
@@ -36,12 +36,12 @@ export default function InstructorScreen() {
 
   const [nameFilter, setNameFilter] = useState('');
   const [idFilter, setIdFilter] = useState('');
-  const [courseFilter, setCourseFilter] = useState('');
+  const [departmentFilter, setdepartmentFilter] = useState('');
 
   // dropdown state
   const [open, setOpen] = useState(false);
   const [items, setItems] = useState([
-    { label: 'All Courses', value: '' },
+    { label: 'All departments', value: '' },
     { label: 'SITE', value: 'SITE' },
     { label: 'SOE', value: 'SOE' },
     { label: 'SOHS', value: 'SOHS' },
@@ -99,14 +99,14 @@ export default function InstructorScreen() {
     return (
       inst.full_name?.toLowerCase().includes(nameFilter.toLowerCase()) &&
       inst.instructor_id?.toLowerCase().includes(idFilter.toLowerCase()) &&
-      (courseFilter === '' || inst.course === courseFilter)
+      (departmentFilter === '' || inst.department === departmentFilter)
     );
   });
 
   const clearFilters = () => {
     setNameFilter('');
     setIdFilter('');
-    setCourseFilter('');
+    setdepartmentFilter('');
   };
 
   return (
@@ -133,15 +133,15 @@ export default function InstructorScreen() {
           <View style={{ flex: 1, zIndex: 3000 }}>
             <DropDownPicker
               open={open}
-              value={courseFilter}
+              value={departmentFilter}
               items={items}
               setOpen={setOpen}
               setValue={(callback) => {
-                const value = callback(courseFilter);
-                setCourseFilter(value);
+                const value = callback(departmentFilter);
+                setdepartmentFilter(value);
               }}
               setItems={setItems}
-              placeholder="Select Course"
+              placeholder="Select department"
               style={styles.dropdown}
               dropDownContainerStyle={styles.dropdownMenu}
               zIndex={3000}
@@ -149,7 +149,7 @@ export default function InstructorScreen() {
             />
           </View>
 
-          {nameFilter || idFilter || courseFilter ? (
+          {nameFilter || idFilter || departmentFilter ? (
             <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
               <Text style={styles.clearButtonText}>✕ Clear</Text>
             </TouchableOpacity>
@@ -171,7 +171,7 @@ export default function InstructorScreen() {
             <View key={inst.id} style={styles.card}>
               <Text style={styles.name}>{inst.full_name}</Text>
               <Text style={styles.detail}>Instructor ID: {inst.instructor_id}</Text>
-              <Text style={styles.detail}>Course: {inst.course}</Text>
+              <Text style={styles.detail}>department: {inst.department}</Text>
               <Text style={styles.detail}>Email: {inst.email}</Text>
               <Text style={styles.detail}>Phone: {inst.phone}</Text>
 
