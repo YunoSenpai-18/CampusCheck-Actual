@@ -17,6 +17,22 @@ import {
 } from 'react-native';
 import DropDownPicker from 'react-native-dropdown-picker';
 
+type Instructor = {
+  id: number;
+  full_name: string;
+  department: string;
+  email: string;
+  phone: string | null;
+};
+
+type Checker = {
+  id: number;
+  full_name: string;
+  email: string;
+  phone: string | null;
+  role: 'Checker' | 'Admin';
+};
+
 type ScheduleItem = {
   id: number;
   subject_code: string;
@@ -25,20 +41,8 @@ type ScheduleItem = {
   block: string;
   day: string;
   time: string;
-  instructor: {
-    id: number;
-    full_name: string;
-    department: string;
-    email: string;
-    phone: string;
-  };
-  checker: {
-    id: number;
-    full_name: string;
-    email: string;
-    phone: string | null;
-    role: 'Checker' | 'Admin';
-  };
+  instructor: Instructor;
+  checker?: Checker;
 };
 
 export default function CampScheduleScreen() {
@@ -54,7 +58,6 @@ export default function CampScheduleScreen() {
   const [blockFilter, setBlockFilter] = useState('');
   const [instructorFilter, setInstructorFilter] = useState('');
 
-  // dropdown state
   const [openDay, setOpenDay] = useState(false);
   const [openTime, setOpenTime] = useState(false);
 
@@ -70,7 +73,6 @@ export default function CampScheduleScreen() {
     }
   };
 
-  // Pull-to-refresh
   const onRefresh = async () => {
     setRefreshing(true);
     await loadSchedules();
@@ -86,7 +88,7 @@ export default function CampScheduleScreen() {
         onPress: async () => {
           try {
             await deleteSchedule(id);
-            loadSchedules(); // refresh list
+            loadSchedules();
           } catch (err) {
             Alert.alert('Error', 'Failed to delete schedule.');
           }
@@ -114,7 +116,6 @@ export default function CampScheduleScreen() {
     setInstructorFilter('');
   };
 
-  // dropdown options
   const dayOptions = [
     { label: 'All Days', value: '' },
     'Monday',
@@ -131,14 +132,11 @@ export default function CampScheduleScreen() {
     value: t,
   }));
 
-  // Fetch on mount + background interval
   useEffect(() => {
     loadSchedules();
-
     const interval = setInterval(() => {
       loadSchedules();
-    }, 2 * 60 * 1000); // every 2 minutes
-
+    }, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -185,14 +183,12 @@ export default function CampScheduleScreen() {
             value={roomFilter}
             onChangeText={setRoomFilter}
           />
-
           <TextInput
             style={styles.filterChip}
             placeholder="Block"
             value={blockFilter}
             onChangeText={setBlockFilter}
           />
-
           <TextInput
             style={styles.filterChip}
             placeholder="Instructor"
@@ -220,25 +216,36 @@ export default function CampScheduleScreen() {
           <Text style={styles.noResults}>No Record Found</Text>
         ) : (
           filteredSchedules.map((item) => (
-            <View key={item.id} style={styles.card}>
-              <Text style={styles.name}>
-                {item.subject_code} | {item.subject}
-              </Text>
-              <Text style={styles.detail}>Day: {item.day}</Text>
-              <Text style={styles.detail}>Time: {item.time}</Text>
-              <Text style={styles.detail}>Room: {item.room}</Text>
-              <Text style={styles.detail}>Block: {item.block}</Text>
-              <Text style={styles.detail}>Instructor: {item.instructor?.full_name}</Text>
-              <Text style={styles.detail}>Checker: {item.checker?.full_name}</Text>
-
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
-                  onPress={() => handleDelete(item.id)}
-                >
-                  <Text style={styles.actionText}>Delete</Text>
-                </TouchableOpacity>
+            <View key={item.id} style={styles.scheduleItem}>
+              <View style={styles.timeContainer}>
+                <Text style={styles.timeText}>{item.time}</Text>
               </View>
+              <View style={styles.itemContent}>
+                <View style={styles.itemHeader}>
+                  <Text style={styles.itemTitle}>
+                    {item.subject_code} | {item.subject}
+                  </Text>
+                </View>
+                <Text style={styles.itemLocation}>Room: {item.room}</Text>
+                <Text style={styles.itemLocation}>Block: {item.block}</Text>
+                <Text style={styles.itemLocation}>Day: {item.day}</Text>
+                <Text style={styles.itemDescription}>
+                  Instructor: {item.instructor?.full_name}
+                </Text>
+                {item.checker && (
+                  <Text style={styles.itemDescription}>
+                    Checker: {item.checker?.full_name}
+                  </Text>
+                )}
+              </View>
+
+              {/* Delete button full width */}
+              <TouchableOpacity
+                style={[styles.actionBtnFull, { backgroundColor: '#FF3B30' }]}
+                onPress={() => handleDelete(item.id)}
+              >
+                <Text style={styles.actionText}>Delete</Text>
+              </TouchableOpacity>
             </View>
           ))
         )}
@@ -289,11 +296,15 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   clearButtonText: { color: '#007AFF', fontWeight: '500', fontSize: 14 },
-  card: {
+
+  // Card styles
+  scheduleItem: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 12,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
@@ -301,15 +312,19 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: '#f1f3f4',
+    flexWrap: 'wrap',
   },
-  name: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginBottom: 6 },
-  detail: { fontSize: 14, color: '#666666', marginBottom: 2 },
-  noResults: {
-    fontSize: 14,
-    color: '#888888',
-    textAlign: 'center',
-    marginTop: 40,
-  },
+  timeContainer: { marginRight: 16, alignItems: 'center', width: 90 },
+  timeText: { fontSize: 14, fontWeight: '600', color: '#007AFF', textAlign: 'center' },
+  itemContent: { flex: 1, marginBottom: 12 }, // added margin
+  itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
+  itemTitle: { fontSize: 16, fontWeight: '600', color: '#1a1a1a' },
+  itemLocation: { fontSize: 14, color: '#666666', marginBottom: 2 },
+  itemDescription: { fontSize: 13, color: '#888888', marginTop: 4 },
+  itemChecker: { fontSize: 12, color: '#aaa', marginTop: 2 },
+
+  noResults: { fontSize: 14, color: '#888888', textAlign: 'center', marginTop: 40 },
+
   fab: {
     position: 'absolute',
     bottom: 20,
@@ -326,12 +341,13 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 5,
   },
-  actions: { flexDirection: 'row', marginTop: 10, gap: 8 },
-  actionBtn: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 8,
+
+  actionBtnFull: {
+    width: '100%',
+    padding: 12,
+    borderRadius: 12,
     alignItems: 'center',
+    marginTop: 12,
   },
   actionText: { color: '#fff', fontWeight: '600' },
 });
