@@ -1,9 +1,8 @@
 import Header from '@/components/ui/Header';
 import { deleteSchedule, fetchSchedules } from '@/services/scheduleApi';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -61,7 +60,6 @@ export default function CampScheduleScreen() {
 
   const loadSchedules = async () => {
     try {
-      setLoading(true);
       const data = await fetchSchedules();
       setScheduleItems(data);
     } catch (error) {
@@ -72,12 +70,7 @@ export default function CampScheduleScreen() {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      loadSchedules();
-    }, [])
-  );
-
+  // Pull-to-refresh
   const onRefresh = async () => {
     setRefreshing(true);
     await loadSchedules();
@@ -93,7 +86,7 @@ export default function CampScheduleScreen() {
         onPress: async () => {
           try {
             await deleteSchedule(id);
-            loadSchedules();
+            loadSchedules(); // refresh list
           } catch (err) {
             Alert.alert('Error', 'Failed to delete schedule.');
           }
@@ -137,6 +130,17 @@ export default function CampScheduleScreen() {
     label: t,
     value: t,
   }));
+
+  // Fetch on mount + background interval
+  useEffect(() => {
+    loadSchedules();
+
+    const interval = setInterval(() => {
+      loadSchedules();
+    }, 2 * 60 * 1000); // every 2 minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>

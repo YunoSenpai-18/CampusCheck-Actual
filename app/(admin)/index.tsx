@@ -1,9 +1,8 @@
 import Header from '@/components/ui/Header';
 import { deleteInstructor, fetchInstructors } from '@/services/instructorApi';
 import { Ionicons } from '@expo/vector-icons';
-import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -52,7 +51,6 @@ export default function InstructorScreen() {
 
   const loadInstructors = async () => {
     try {
-      setLoading(true);
       const data = await fetchInstructors();
       setInstructors(data);
     } catch (error) {
@@ -62,13 +60,6 @@ export default function InstructorScreen() {
       setLoading(false);
     }
   };
-
-  // refresh on focus
-  useFocusEffect(
-    useCallback(() => {
-      loadInstructors();
-    }, [])
-  );
 
   // pull-to-refresh
   const onRefresh = async () => {
@@ -108,6 +99,17 @@ export default function InstructorScreen() {
     setIdFilter('');
     setdepartmentFilter('');
   };
+
+  // Fetch on mount + background interval
+  useEffect(() => {
+    loadInstructors();
+
+    const interval = setInterval(() => {
+      loadInstructors();
+    }, 2 * 60 * 1000); // every 2 minutes
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <SafeAreaView style={styles.container}>
