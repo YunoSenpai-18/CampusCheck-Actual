@@ -1,4 +1,6 @@
 import Header from '@/components/ui/Header';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -24,34 +26,26 @@ export default function ScheduleScreen() {
   const [scheduleItems, setScheduleItems] = useState<ScheduleItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Simulated API call — replace this with your DB/API call later
   const fetchSchedule = async () => {
     try {
       setLoading(true);
-      // Example static data (kept the same visible strings to preserve UI)
-      const data: ScheduleItem[] = [
-        {
-          time: '8:00AM - 12:00PM',
-          subject: 'ITP17 | Advanced Programming',
-          room: 'V209',
-          block: '33-ITE-01',
-          day: 'Monday',
-          instructor: 'Jelson V. Lanto',
-        },
-        {
-          time: '8:00AM - 12:00PM',
-          subject: 'ITP16 | Information Assurance and Security',
-          room: 'V401',
-          block: '33-ITE-02',
-          day: 'Monday',
-          instructor: 'Yuri Rancudo',
-        },
-      ];
-      // TODO: Replace above with real fetch, e.g.:
-      // const res = await fetch('https://your-api/schedule');
-      // const data: ScheduleItem[] = await res.json();
 
-      setScheduleItems(data);
+      // Retrieve token
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.warn('No token found, redirecting to login...');
+        router.replace('/login');
+        return;
+      }
+
+      // Fetch today's schedules from backend
+      const res = await axios.get('http://10.0.2.2:8000/api/checker/schedules/today', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      setScheduleItems(res.data);
     } catch (error) {
       console.error('Failed to fetch schedule:', error);
     } finally {
@@ -87,7 +81,7 @@ export default function ScheduleScreen() {
 
         {loading ? (
           <ActivityIndicator size="large" color="#007AFF" style={{ marginTop: 20 }} />
-        ) : (
+        ) : scheduleItems.length > 0 ? (
           scheduleItems.map((item, index) => (
             <View key={index} style={styles.scheduleItem}>
               <View style={styles.timeContainer}>
@@ -104,6 +98,10 @@ export default function ScheduleScreen() {
               </View>
             </View>
           ))
+        ) : (
+          <Text style={{ textAlign: 'center', marginTop: 20, color: '#666' }}>
+            No schedules for today 🎉
+          </Text>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -142,10 +140,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
     shadowRadius: 4,
     elevation: 2,

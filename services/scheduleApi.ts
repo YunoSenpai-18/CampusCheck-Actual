@@ -69,3 +69,18 @@ export async function deleteSchedule(id: number) {
 
   return res.json(); // Laravel usually returns { message: "Deleted successfully" }
 }
+
+// READ: Get schedules for the logged-in checker (today only)
+export async function fetchCheckerSchedules() {
+  const token = await getToken();
+  // Expose public domain here
+  const res = await fetch('https://tbfu6nwqdf.sharedwithexpose.com/api/checker/schedules', {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  });
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch checker schedules');
+  }
+
+  return res.json();
+}
