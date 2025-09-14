@@ -1,8 +1,11 @@
 import Header from '@/components/ui/Header';
 import { FontAwesome5 } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
+  ActivityIndicator,
   SafeAreaView,
   ScrollView,
   StyleSheet,
@@ -18,12 +21,15 @@ export default function DashboardScreen() {
   const [time, setTime] = useState('');
   const [date, setDate] = useState('');
 
-  // Data from database (replace with API fetch later)
+  // Attendance
   const [attendanceCount, setAttendanceCount] = useState<number>(0);
   const [attendanceRecords, setAttendanceRecords] = useState<{ name: string; status: string }[]>([]);
+
+  // Schedule
   const [scheduleList, setScheduleList] = useState<
-    { time: string; subject: string; room: string; block: string; day: string; instructor: string }[]
+    { time: string; subjectCode: string; subject: string; room: string; block: string; day: string; instructor: string }[]
   >([]);
+  const [loadingSchedules, setLoadingSchedules] = useState(true);
 
   const navigateToSchedule = () => router.push('/(checker)/schedule');
   const navigateToProfile = () => router.push('/(checker)/profile');
@@ -32,9 +38,7 @@ export default function DashboardScreen() {
   useEffect(() => {
     const updateTimeAndDate = () => {
       const now = new Date();
-      setTime(
-        now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-      );
+      setTime(now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
       setDate(
         now.toLocaleDateString(undefined, {
           weekday: 'long',
@@ -49,37 +53,52 @@ export default function DashboardScreen() {
     return () => clearInterval(interval);
   }, []);
 
-  // Simulate fetching data from API/DB
-  useEffect(() => {
-    // Replace with actual API call later
-    const fetchDashboardData = async () => {
-      // Example static data for now
-      setAttendanceCount(7);
-      setAttendanceRecords([
-        { name: 'Jelson V. Lanto', status: 'Present' },
-        { name: 'Yuri Rancudo', status: 'Present' },
-      ]);
-      setScheduleList([
-        {
-          time: '8:00AM - 12:00PM',
-          subject: 'ITP17 | Advanced Programming',
-          room: 'V209',
-          block: '33-ITE-01',
-          day: 'Monday',
-          instructor: 'Jelson V. Lanto',
-        },
-        {
-          time: '8:00AM - 12:00PM',
-          subject: 'ITP16 | Information Assurance and Security',
-          room: 'V401',
-          block: '33-ITE-02',
-          day: 'Monday',
-          instructor: 'Yuri Rancudo',
-        },
-      ]);
-    };
+  // Fetch schedules dynamically
+  const fetchCheckerSchedules = async () => {
+    try {
+      setLoadingSchedules(true);
 
-    fetchDashboardData();
+      // Get token
+      const token = await AsyncStorage.getItem('token');
+      if (!token) {
+        console.warn('No token found, redirecting to login...');
+        router.replace('/login');
+        return;
+      }
+
+      // Fetch schedules for checker
+      const res = await axios.get('https://b1kbhbuv1p.sharedwithexpose.com/api/checker/schedules', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      // Map API data to dashboard format and slice first 2 items
+      const schedules = res.data.map((item: any) => ({
+        time: item.time,
+        subjectCode: item.subject_code,
+        subject: item.subject,
+        room: item.room,
+        block: item.block,
+        day: item.day,
+        instructor: item.instructor.full_name,
+      })).slice(0, 2);
+
+      setScheduleList(schedules);
+    } catch (error) {
+      console.error('Failed to fetch schedules:', error);
+    } finally {
+      setLoadingSchedules(false);
+    }
+  };
+
+  // Simulate fetching attendance for now
+  useEffect(() => {
+    setAttendanceCount(7);
+    setAttendanceRecords([
+      { name: 'Jelson V. Lanto', status: 'Present' },
+      { name: 'Yuri Rancudo', status: 'Present' },
+    ]);
+
+    fetchCheckerSchedules();
   }, []);
 
   return (
@@ -127,18 +146,27 @@ export default function DashboardScreen() {
           <TouchableOpacity onPress={navigateToSchedule}>
             <Text style={styles.sectionTitleBlue}>Schedule ➤</Text>
           </TouchableOpacity>
-          <View style={styles.scheduleRow}>
-            {scheduleList.map((sched, index) => (
-              <View key={index} style={styles.scheduleBox}>
-                <Text style={styles.timeTextSchedule}>{sched.time}</Text>
-                <Text style={styles.subjectCode}>{sched.subject}</Text>
-                <Text style={styles.room}>Room: {sched.room}</Text>
-                <Text style={styles.block}>Block: {sched.block}</Text>
-                <Text style={styles.room}>Day: {sched.day}</Text>
-                <Text style={styles.instructor}>Instructor: {sched.instructor}</Text>
-              </View>
-            ))}
-          </View>
+
+          {loadingSchedules ? (
+            <ActivityIndicator size="small" color="#007AFF" style={{ marginTop: 12 }} />
+          ) : scheduleList.length > 0 ? (
+            <View style={styles.scheduleRow}>
+              {scheduleList.map((sched, index) => (
+                <View key={index} style={styles.scheduleBox}>
+                  <Text style={styles.timeTextSchedule}>{sched.time}</Text>
+                  <Text style={styles.subjectCode}>{sched.subjectCode} | {sched.subject}</Text>
+                  <Text style={styles.room}>Room: {sched.room}</Text>
+                  <Text style={styles.block}>Block: {sched.block}</Text>
+                  <Text style={styles.room}>Day: {sched.day}</Text>
+                  <Text style={styles.instructor}>Instructor: {sched.instructor}</Text>
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text style={{ textAlign: 'center', marginTop: 12, color: '#666' }}>
+              No schedules for today 🎉
+            </Text>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

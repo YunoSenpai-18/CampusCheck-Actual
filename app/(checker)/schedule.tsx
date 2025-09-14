@@ -5,13 +5,26 @@ import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+type Instructor = {
+  id: number;
+  full_name: string;
+  instructor_id: string;
+  department: string;
+  email: string;
+  phone: string;
+  photo: string;
+  created_at: string;
+  updated_at: string;
+};
+
 type ScheduleItem = {
   time: string;
+  subject_code: string;
   subject: string;
   room: string;
   block: string;
   day: string;
-  instructor: string;
+  instructor: Instructor;
 };
 
 export default function ScheduleScreen() {
@@ -39,7 +52,7 @@ export default function ScheduleScreen() {
       }
 
       // Fetch today's schedules from backend
-      const res = await axios.get('http://10.0.2.2:8000/api/checker/schedules/today', {
+      const res = await axios.get('https://b1kbhbuv1p.sharedwithexpose.com/api/checker/schedules', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -89,12 +102,13 @@ export default function ScheduleScreen() {
               </View>
               <View style={styles.itemContent}>
                 <View style={styles.itemHeader}>
-                  <Text style={styles.itemTitle}>{item.subject}</Text>
+                  <Text style={styles.itemTitle}>{item.subject_code} | {item.subject}</Text>
                 </View>
                 <Text style={styles.itemLocation}>Room: {item.room}</Text>
                 <Text style={styles.itemLocation}>Block: {item.block}</Text>
                 <Text style={styles.itemLocation}>Day: {item.day}</Text>
-                <Text style={styles.itemDescription}>Instructor: {item.instructor}</Text>
+                <Text style={styles.itemDescription}>Instructor: {item.instructor.full_name}
+                </Text>
               </View>
             </View>
           ))
