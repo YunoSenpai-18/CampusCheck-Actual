@@ -10,8 +10,9 @@ type AttendanceRecord = {
   room: string;
   block: string;
   date: string;
-  status: 'Present' | 'Absent';
+  status: 'Present' | 'Late';
   instructor: string;
+  checker: string;
 };
 
 export default function AttendanceRecordScreen() {
@@ -41,6 +42,7 @@ export default function AttendanceRecordScreen() {
           date: 'August 4, 2025',
           status: 'Present',
           instructor: 'Jelson V. Lanto',
+          checker: 'Laurence P. Dingle',
         },
         {
           time: '8:00AM - 12:00PM',
@@ -48,8 +50,9 @@ export default function AttendanceRecordScreen() {
           room: 'V401',
           block: '33-ITE-02',
           date: 'August 4, 2025',
-          status: 'Absent',
+          status: 'Late',
           instructor: 'Yuri Rancudo',
+          checker: 'Laurence P. Dingle',
         },
       ];
       setAttendanceRecords(data);
@@ -111,6 +114,7 @@ export default function AttendanceRecordScreen() {
                 <Text style={styles.itemLocation}>Block: {record.block}</Text>
                 <Text style={styles.itemLocation}>Date: {record.date}</Text>
                 <Text style={styles.itemDescription}>Instructor: {record.instructor}</Text>
+                <Text style={styles.itemDescription}>Checker: {record.checker}</Text>
               </View>
             </View>
           ))
