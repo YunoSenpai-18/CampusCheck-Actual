@@ -6,13 +6,13 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -35,7 +35,7 @@ export default function ProfileScreen() {
           return;
         }
         // Expose public domain here
-        const res = await fetch('https://benfscwxlf.sharedwithexpose.com/api/user', {
+        const res = await fetch('https://testingapi.loca.lt/api/user', {
           headers: {
             Authorization: `Bearer ${token}`,
             Accept: 'application/json',

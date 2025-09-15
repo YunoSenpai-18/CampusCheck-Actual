@@ -10,19 +10,19 @@ import {
   Image,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Constants
 const SCHOOL_ID_PLACEHOLDER = '22-0000-000';
 const PASSWORD_PLACEHOLDER = '********';
 
 // Expose public domain here
-const API_URL = 'https://benfscwxlf.sharedwithexpose.com/api';
+const API_URL = 'https://testingapi.loca.lt/api';
 
 function Logo() {
   return (
