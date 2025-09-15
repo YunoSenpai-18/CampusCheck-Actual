@@ -1,5 +1,5 @@
 import Header from '@/components/ui/Header';
-import { Picker } from '@react-native-picker/picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -8,8 +8,10 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  TouchableOpacity,
   View,
 } from 'react-native';
+import DropDownPicker from 'react-native-dropdown-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type AttendanceRecord = {
@@ -18,9 +20,9 @@ type AttendanceRecord = {
   room: string;
   block: string;
   date: string;
-  status: 'Present' | 'Absent' | 'Late';
+  status: 'Present' | 'Late';
   instructor: string;
-  day: string;
+  checker: string;
 };
 
 export default function AttendanceRecordScreen() {
@@ -32,9 +34,12 @@ export default function AttendanceRecordScreen() {
   const [roomFilter, setRoomFilter] = useState('');
   const [blockFilter, setBlockFilter] = useState('');
   const [instructorFilter, setInstructorFilter] = useState('');
-  const [dayFilter, setDayFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [dateFilter, setDateFilter] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
+  // Dropdown state
+  const [openStatus, setOpenStatus] = useState(false);
 
   const navigateToProfile = () => {
     router.push('/(admin)/profile');
@@ -53,7 +58,7 @@ export default function AttendanceRecordScreen() {
           date: 'August 4, 2025',
           status: 'Present',
           instructor: 'Jelson V. Lanto',
-          day: 'Monday',
+          checker: 'Laurence P. Dingle',
         },
         {
           time: '8:00AM - 12:00PM',
@@ -61,9 +66,9 @@ export default function AttendanceRecordScreen() {
           room: 'V401',
           block: '33-ITE-02',
           date: 'August 4, 2025',
-          status: 'Absent',
+          status: 'Late',
           instructor: 'Yuri Rancudo',
-          day: 'Tuesday',
+          checker: 'Laurence P. Dingle',
         },
       ];
       setAttendanceRecords(data);
@@ -85,7 +90,6 @@ export default function AttendanceRecordScreen() {
       (blockFilter === '' || record.block.toLowerCase().includes(blockFilter.toLowerCase())) &&
       (instructorFilter === '' ||
         record.instructor.toLowerCase().includes(instructorFilter.toLowerCase())) &&
-      (dayFilter === '' || record.day === dayFilter) &&
       (statusFilter === '' || record.status === statusFilter) &&
       (dateFilter === '' || record.date.toLowerCase().includes(dateFilter.toLowerCase()))
     );
@@ -95,69 +99,98 @@ export default function AttendanceRecordScreen() {
     <SafeAreaView style={styles.container}>
       <Header title="Attendance Record" onProfilePress={navigateToProfile} />
 
-      {/* Filter Bar */}
-      <View style={styles.filterBar}>
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Room"
-          value={roomFilter}
-          onChangeText={setRoomFilter}
-        />
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Block"
-          value={blockFilter}
-          onChangeText={setBlockFilter}
-        />
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Instructor"
-          value={instructorFilter}
-          onChangeText={setInstructorFilter}
-        />
-        <TextInput
-          style={styles.filterChip}
-          placeholder="Date"
-          value={dateFilter}
-          onChangeText={setDateFilter}
-        />
+      {/* Filters */}
+      <View style={styles.filterWrapper}>
+        <View style={{ flexDirection: 'column', gap: 10 }}>
+          {/* Status Dropdown */}
+          <View style={{ zIndex: 2000 }}>
+            <DropDownPicker
+              open={openStatus}
+              value={statusFilter}
+              items={[
+                { label: 'All Status', value: '' },
+                { label: 'Present', value: 'Present' },
+                { label: 'Late', value: 'Late' },
+              ]}
+              setOpen={setOpenStatus}
+              setValue={(cb) => setStatusFilter(cb(statusFilter))}
+              placeholder="Select Status"
+              style={styles.dropdown}
+              dropDownContainerStyle={styles.dropdownMenu}
+              zIndex={2000}
+              zIndexInverse={2000}
+            />
+          </View>
 
-        <View style={styles.pickerChip}>
-          <Picker selectedValue={dayFilter} onValueChange={setDayFilter} style={styles.picker}>
-            <Picker.Item label="All Day" value="" />
-            <Picker.Item label="Monday" value="Monday" />
-            <Picker.Item label="Tuesday" value="Tuesday" />
-            <Picker.Item label="Wednesday" value="Wednesday" />
-            <Picker.Item label="Thursday" value="Thursday" />
-            <Picker.Item label="Friday" value="Friday" />
-            <Picker.Item label="Saturday" value="Saturday" />
-          </Picker>
-        </View>
-
-        <View style={styles.pickerChip}>
-          <Picker selectedValue={statusFilter} onValueChange={setStatusFilter} style={styles.picker}>
-            <Picker.Item label="All Status" value="" />
-            <Picker.Item label="Present" value="Present" />
-            <Picker.Item label="Absent" value="Absent" />
-            <Picker.Item label="Late" value="Late" />
-          </Picker>
-        </View>
-
-        {(roomFilter || blockFilter || instructorFilter || dateFilter || dayFilter || statusFilter) && (
-          <Text
-            style={styles.clearButton}
-            onPress={() => {
-              setRoomFilter('');
-              setBlockFilter('');
-              setInstructorFilter('');
-              setDateFilter('');
-              setDayFilter('');
-              setStatusFilter('');
-            }}
+          {/* Date */}
+          <TouchableOpacity
+            style={styles.filterChip}
+            onPress={() => setShowDatePicker(true)}
           >
-            ✕ Clear
-          </Text>
-        )}
+            <Text style={{ color: dateFilter ? '#000' : '#888' }}>
+              {dateFilter || 'Select Date'}
+            </Text>
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={dateFilter ? new Date(dateFilter) : new Date()}
+              mode="date"
+              display="calendar"
+              onChange={(event, selectedDate) => {
+                setShowDatePicker(false);
+                if (selectedDate) {
+                  const formatted = selectedDate.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                  });
+                  setDateFilter(formatted);
+                }
+              }}
+            />
+          )}
+
+          {/* Room */}
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Room"
+            value={roomFilter}
+            onChangeText={setRoomFilter}
+          />
+
+          {/* Block */}
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Block"
+            value={blockFilter}
+            onChangeText={setBlockFilter}
+          />
+
+          {/* Instructor */}
+          <TextInput
+            style={styles.filterChip}
+            placeholder="Instructor"
+            value={instructorFilter}
+            onChangeText={setInstructorFilter}
+          />
+          
+          {/* Clear Button */}
+          {(roomFilter || blockFilter || instructorFilter || dateFilter || statusFilter) && (
+            <TouchableOpacity
+              style={styles.clearButton}
+              onPress={() => {
+                setRoomFilter('');
+                setBlockFilter('');
+                setInstructorFilter('');
+                setDateFilter('');
+                setStatusFilter('');
+              }}
+            >
+              <Text style={styles.clearButtonText}>Clear</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -183,9 +216,9 @@ export default function AttendanceRecordScreen() {
                 <Text style={styles.itemTitle}>{record.subject}</Text>
                 <Text style={styles.itemLocation}>Room: {record.room}</Text>
                 <Text style={styles.itemLocation}>Block: {record.block}</Text>
-                <Text style={styles.itemLocation}>Day: {record.day}</Text>
                 <Text style={styles.itemLocation}>Date: {record.date}</Text>
                 <Text style={styles.itemDescription}>Instructor: {record.instructor}</Text>
+                <Text style={styles.itemDescription}>Checker: {record.checker}</Text>
               </View>
             </View>
           ))
@@ -198,17 +231,15 @@ export default function AttendanceRecordScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
   content: { flex: 1, padding: 20, backgroundColor: '#ffffff' },
-  filterBar: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    padding: 10,
+  filterWrapper: {
     borderBottomWidth: 1,
     borderBottomColor: '#f1f3f4',
     backgroundColor: '#fafafa',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    zIndex: 1000,
   },
   filterChip: {
-    flex: 1,
     backgroundColor: '#fff',
     borderRadius: 20,
     borderWidth: 1,
@@ -216,25 +247,30 @@ const styles = StyleSheet.create({
     paddingHorizontal: 14,
     paddingVertical: 8,
     fontSize: 14,
-    minWidth: 100,
-    marginBottom: 6,
-  },
-  pickerChip: {
-    borderWidth: 1,
-    borderColor: '#e0e0e0',
-    borderRadius: 20,
-    backgroundColor: '#fff',
     minWidth: 120,
-    marginBottom: 6,
+    marginRight: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
   },
-  picker: { height: 40, width: '100%' },
+  dropdown: { borderRadius: 20, borderColor: '#e0e0e0', minHeight: 40 },
+  dropdownMenu: { borderRadius: 12, borderColor: '#e0e0e0' },
   clearButton: {
+    backgroundColor: '#f1f3f4',
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 6,
+  },
+  clearButtonText: {
     color: '#007AFF',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 8,
-    paddingHorizontal: 8,
-    marginBottom: 6,
+    fontWeight: '600',
+    fontSize: 15,
   },
   noResults: {
     fontSize: 14,

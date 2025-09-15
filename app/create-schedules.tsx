@@ -154,12 +154,27 @@ export default function CreateScheduleScreen() {
           value={time}
           onChangeText={setTime}
         />
-        <TextInput
-          style={styles.input}
-          placeholder="Day"
-          value={day}
-          onChangeText={setDay}
-        />
+
+        {/* Day Picker */}
+        <Text style={styles.label}>Select Day</Text>
+        <View style={styles.dropdownWrapper}>
+          <Picker
+            selectedValue={day}
+            onValueChange={(val) => setDay(val)}
+            style={styles.picker}
+            dropdownIconColor="#007AFF"
+          >
+            <Picker.Item label="-- Select Day --" value="" />
+            <Picker.Item label="Monday" value="Monday" />
+            <Picker.Item label="Tuesday" value="Tuesday" />
+            <Picker.Item label="Wednesday" value="Wednesday" />
+            <Picker.Item label="Thursday" value="Thursday" />
+            <Picker.Item label="Friday" value="Friday" />
+            <Picker.Item label="Saturday" value="Saturday" />
+            <Picker.Item label="Sunday" value="Sunday" />
+          </Picker>
+        </View>
+
         <TextInput
           style={styles.input}
           placeholder="Room"

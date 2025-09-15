@@ -1,6 +1,7 @@
 import Header from '@/components/ui/Header';
 import { deleteSchedule, fetchSchedules } from '@/services/scheduleApi';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Instructor = {
@@ -57,9 +57,6 @@ export default function CampScheduleScreen() {
   const [roomFilter, setRoomFilter] = useState('');
   const [blockFilter, setBlockFilter] = useState('');
   const [instructorFilter, setInstructorFilter] = useState('');
-
-  const [openDay, setOpenDay] = useState(false);
-  const [openTime, setOpenTime] = useState(false);
 
   const loadSchedules = async () => {
     try {
@@ -146,35 +143,30 @@ export default function CampScheduleScreen() {
 
       {/* Filters */}
       <View style={styles.filterWrapper}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
-          <View style={{ flex: 1, zIndex: 3000 }}>
-            <DropDownPicker
-              open={openDay}
-              value={dayFilter}
-              items={dayOptions}
-              setOpen={setOpenDay}
-              setValue={(cb) => setDayFilter(cb(dayFilter))}
-              placeholder="Select Day"
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownMenu}
-              zIndex={3000}
-              zIndexInverse={1000}
-            />
+        <View style={{ flexDirection: 'column', gap: 10 }}>
+          {/* Day Picker */}
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={dayFilter}
+              onValueChange={(value) => setDayFilter(value)}
+            >
+              {dayOptions.map((opt) => (
+                <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+              ))}
+            </Picker>
           </View>
 
-          <View style={{ flex: 1, zIndex: 2000 }}>
-            <DropDownPicker
-              open={openTime}
-              value={timeFilter}
-              items={[{ label: 'All Times', value: '' }, ...timeOptions]}
-              setOpen={setOpenTime}
-              setValue={(cb) => setTimeFilter(cb(timeFilter))}
-              placeholder="Select Time"
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownMenu}
-              zIndex={2000}
-              zIndexInverse={2000}
-            />
+          {/* Time Picker */}
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={timeFilter}
+              onValueChange={(value) => setTimeFilter(value)}
+            >
+              <Picker.Item label="All Times" value="" />
+              {timeOptions.map((opt) => (
+                <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+              ))}
+            </Picker>
           </View>
 
           <TextInput
@@ -198,7 +190,7 @@ export default function CampScheduleScreen() {
 
           {dayFilter || timeFilter || roomFilter || blockFilter || instructorFilter ? (
             <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-              <Text style={styles.clearButtonText}>✕ Clear</Text>
+              <Text style={styles.clearButtonText}>Clear</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -285,17 +277,28 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  dropdown: { borderRadius: 20, borderColor: '#e0e0e0', minHeight: 40 },
-  dropdownMenu: { borderRadius: 12, borderColor: '#e0e0e0' },
+  pickerWrapper: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+  },
   clearButton: {
     backgroundColor: '#f1f3f4',
-    borderRadius: 20,
-    paddingHorizontal: 14,
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    alignSelf: 'flex-start',
+    marginTop: 6,
   },
-  clearButtonText: { color: '#007AFF', fontWeight: '500', fontSize: 14 },
+  clearButtonText: {
+    color: '#007AFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
 
   // Card styles
   scheduleItem: {
@@ -316,7 +319,7 @@ const styles = StyleSheet.create({
   },
   timeContainer: { marginRight: 16, alignItems: 'center', width: 90 },
   timeText: { fontSize: 14, fontWeight: '600', color: '#007AFF', textAlign: 'center' },
-  itemContent: { flex: 1, marginBottom: 12 }, // added margin
+  itemContent: { flex: 1, marginBottom: 12 },
   itemHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 },
   itemTitle: { fontSize: 16, fontWeight: '600', color: '#1a1a1a' },
   itemLocation: { fontSize: 14, color: '#666666', marginBottom: 2 },

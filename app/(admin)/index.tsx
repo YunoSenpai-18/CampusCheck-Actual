@@ -1,6 +1,7 @@
 import Header from '@/components/ui/Header';
 import { deleteInstructor, fetchInstructors } from '@/services/instructorApi';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
@@ -14,7 +15,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import DropDownPicker from 'react-native-dropdown-picker';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type Instructor = {
@@ -35,11 +35,9 @@ export default function InstructorScreen() {
 
   const [nameFilter, setNameFilter] = useState('');
   const [idFilter, setIdFilter] = useState('');
-  const [departmentFilter, setdepartmentFilter] = useState('');
+  const [departmentFilter, setDepartmentFilter] = useState('');
 
-  // dropdown state
-  const [open, setOpen] = useState(false);
-  const [items, setItems] = useState([
+  const departmentOptions = [
     { label: 'All departments', value: '' },
     { label: 'SITE', value: 'SITE' },
     { label: 'SOE', value: 'SOE' },
@@ -47,7 +45,7 @@ export default function InstructorScreen() {
     { label: 'SOC', value: 'SOC' },
     { label: 'SBA', value: 'SBA' },
     { label: 'SIHM', value: 'SIHM' },
-  ]);
+  ];
 
   const loadInstructors = async () => {
     try {
@@ -61,7 +59,6 @@ export default function InstructorScreen() {
     }
   };
 
-  // pull-to-refresh
   const onRefresh = async () => {
     setRefreshing(true);
     await loadInstructors();
@@ -77,7 +74,7 @@ export default function InstructorScreen() {
         onPress: async () => {
           try {
             await deleteInstructor(id);
-            loadInstructors(); // refresh list
+            loadInstructors();
           } catch (err) {
             Alert.alert('Error', 'Failed to delete instructor.');
           }
@@ -97,17 +94,14 @@ export default function InstructorScreen() {
   const clearFilters = () => {
     setNameFilter('');
     setIdFilter('');
-    setdepartmentFilter('');
+    setDepartmentFilter('');
   };
 
-  // Fetch on mount + background interval
   useEffect(() => {
     loadInstructors();
-
     const interval = setInterval(() => {
       loadInstructors();
-    }, 2 * 60 * 1000); // every 2 minutes
-
+    }, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
@@ -117,7 +111,18 @@ export default function InstructorScreen() {
 
       {/* Filters */}
       <View style={styles.filterWrapper}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'column', gap: 10 }}>
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={departmentFilter}
+              onValueChange={(value) => setDepartmentFilter(value)}
+            >
+              {departmentOptions.map((opt) => (
+                <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+              ))}
+            </Picker>
+          </View>
+
           <TextInput
             style={styles.filterChip}
             placeholder="Name"
@@ -132,28 +137,9 @@ export default function InstructorScreen() {
             onChangeText={setIdFilter}
           />
 
-          <View style={{ flex: 1, zIndex: 3000 }}>
-            <DropDownPicker
-              open={open}
-              value={departmentFilter}
-              items={items}
-              setOpen={setOpen}
-              setValue={(callback) => {
-                const value = callback(departmentFilter);
-                setdepartmentFilter(value);
-              }}
-              setItems={setItems}
-              placeholder="Select department"
-              style={styles.dropdown}
-              dropDownContainerStyle={styles.dropdownMenu}
-              zIndex={3000}
-              zIndexInverse={1000}
-            />
-          </View>
-
           {nameFilter || idFilter || departmentFilter ? (
             <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
-              <Text style={styles.clearButtonText}>✕ Clear</Text>
+              <Text style={styles.clearButtonText}>Clear</Text>
             </TouchableOpacity>
           ) : null}
         </View>
@@ -173,11 +159,11 @@ export default function InstructorScreen() {
             <View key={inst.id} style={styles.card}>
               <Text style={styles.name}>{inst.full_name}</Text>
               <Text style={styles.detail}>Instructor ID: {inst.instructor_id}</Text>
-              <Text style={styles.detail}>department: {inst.department}</Text>
+              <Text style={styles.detail}>Department: {inst.department}</Text>
               <Text style={styles.detail}>Email: {inst.email}</Text>
               <Text style={styles.detail}>Phone: {inst.phone}</Text>
 
-              {/* Delete Button Only */}
+              {/* Delete Button */}
               <View style={styles.actions}>
                 <TouchableOpacity
                   style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
@@ -191,7 +177,6 @@ export default function InstructorScreen() {
         )}
       </ScrollView>
 
-      {/* Floating Create Button */}
       <TouchableOpacity style={styles.fab} onPress={() => router.push('/create-instructors')}>
         <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
@@ -226,17 +211,28 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
   },
-  dropdown: { borderRadius: 20, borderColor: '#e0e0e0', minHeight: 40 },
-  dropdownMenu: { borderRadius: 12, borderColor: '#e0e0e0' },
+  pickerWrapper: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    overflow: 'hidden',
+  },
   clearButton: {
     backgroundColor: '#f1f3f4',
-    borderRadius: 20,
-    paddingHorizontal: 14,
+    borderRadius: 24,
+    paddingVertical: 10,
+    paddingHorizontal: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 8,
+    alignSelf: 'flex-start',
+    marginTop: 6,
   },
-  clearButtonText: { color: '#007AFF', fontWeight: '500', fontSize: 14 },
+  clearButtonText: {
+    color: '#007AFF',
+    fontWeight: '600',
+    fontSize: 15,
+  },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
@@ -252,12 +248,7 @@ const styles = StyleSheet.create({
   },
   name: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginBottom: 6 },
   detail: { fontSize: 14, color: '#666666', marginBottom: 2 },
-  noResults: {
-    fontSize: 14,
-    color: '#888888',
-    textAlign: 'center',
-    marginTop: 40,
-  },
+  noResults: { fontSize: 14, color: '#888888', textAlign: 'center', marginTop: 40 },
   fab: {
     position: 'absolute',
     bottom: 20,
