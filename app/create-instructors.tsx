@@ -1,10 +1,12 @@
 import Header from '@/components/ui/Header';
 import { createInstructor } from '@/services/instructorApi';
 import { Picker } from '@react-native-picker/picker';
+import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,7 +24,21 @@ export default function CreateInstructorScreen() {
   const [department, setDepartment] = useState('');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [photo, setPhoto] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 4],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setPhoto(result.assets[0]);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!fullName || !instructorId || !department || !email || !phone) {
@@ -40,7 +56,7 @@ export default function CreateInstructorScreen() {
 
     try {
       setLoading(true);
-      const res = await createInstructor(newInstructor);
+      const res = await createInstructor(newInstructor, photo);
 
       if (res?.id) {
         Alert.alert('Success', 'Instructor created successfully');
@@ -112,6 +128,20 @@ export default function CreateInstructorScreen() {
           keyboardType="phone-pad"
         />
 
+        {/* Photo Picker */}
+        <Text style={styles.label}>Photo</Text>
+        <TouchableOpacity style={styles.photoPicker} onPress={pickImage}>
+          {photo ? (
+            <Image
+              source={{ uri: photo.uri }}
+              style={{ width: '100%', height: '100%', borderRadius: 10 }}
+              resizeMode="cover"
+            />
+          ) : (
+            <Text style={{ color: '#888' }}>Tap to select an image</Text>
+          )}
+        </TouchableOpacity>
+
         {/* Create Button */}
         <TouchableOpacity
           style={styles.submitButton}
@@ -170,6 +200,16 @@ const styles = StyleSheet.create({
   picker: {
     height: 50,
     color: '#222',
+  },
+  photoPicker: {
+    height: 150,
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#f9f9f9',
+    marginBottom: 14,
   },
   submitButton: {
     backgroundColor: '#007AFF',

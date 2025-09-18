@@ -7,6 +7,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,7 @@ type Instructor = {
   department: string;
   email: string;
   phone: string;
+  photo_url?: string | null; // ✅ added for photo support
 };
 
 export default function InstructorScreen() {
@@ -157,20 +159,31 @@ export default function InstructorScreen() {
         ) : (
           filteredInstructors.map((inst) => (
             <View key={inst.id} style={styles.card}>
-              <Text style={styles.name}>{inst.full_name}</Text>
-              <Text style={styles.detail}>Instructor ID: {inst.instructor_id}</Text>
-              <Text style={styles.detail}>Department: {inst.department}</Text>
-              <Text style={styles.detail}>Email: {inst.email}</Text>
-              <Text style={styles.detail}>Phone: {inst.phone}</Text>
+              {/* Left: photo (only if available) */}
+              {inst.photo_url ? (
+                <Image
+                  source={{ uri: inst.photo_url }}
+                  style={styles.photo}
+                />
+              ) : null}
 
-              {/* Delete Button */}
-              <View style={styles.actions}>
-                <TouchableOpacity
-                  style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
-                  onPress={() => handleDelete(inst.id)}
-                >
-                  <Text style={styles.actionText}>Delete</Text>
-                </TouchableOpacity>
+              {/* Right: info */}
+              <View style={{ flex: 1, marginLeft: inst.photo_url ? 12 : 0 }}>
+                <Text style={styles.name}>{inst.full_name}</Text>
+                <Text style={styles.detail}>Instructor ID: {inst.instructor_id}</Text>
+                <Text style={styles.detail}>Department: {inst.department}</Text>
+                <Text style={styles.detail}>Email: {inst.email}</Text>
+                <Text style={styles.detail}>Phone: {inst.phone}</Text>
+
+                {/* Delete Button */}
+                <View style={styles.actions}>
+                  <TouchableOpacity
+                    style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
+                    onPress={() => handleDelete(inst.id)}
+                  >
+                    <Text style={styles.actionText}>Delete</Text>
+                  </TouchableOpacity>
+                </View>
               </View>
             </View>
           ))
@@ -234,6 +247,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
   },
   card: {
+    flexDirection: 'row', // ✅ side by side layout
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
@@ -245,6 +259,13 @@ const styles = StyleSheet.create({
     elevation: 2,
     borderWidth: 1,
     borderColor: '#f1f3f4',
+    alignItems: 'center',
+  },
+  photo: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#eee',
   },
   name: { fontSize: 16, fontWeight: '600', color: '#1a1a1a', marginBottom: 6 },
   detail: { fontSize: 14, color: '#666666', marginBottom: 2 },
