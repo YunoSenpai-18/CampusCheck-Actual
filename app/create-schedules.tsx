@@ -2,11 +2,13 @@ import Header from '@/components/ui/Header';
 import { fetchInstructors } from '@/services/instructorApi';
 import { createSchedule } from '@/services/scheduleApi';
 import { fetchUsers } from '@/services/userApi';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
 import { useRouter } from 'expo-router';
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -42,7 +44,10 @@ export default function CreateScheduleScreen() {
   const [subjectCode, setSubjectCode] = useState('');
   const [subject, setSubject] = useState('');
   const [block, setBlock] = useState('');
-  const [time, setTime] = useState('');
+  const [startTime, setStartTime] = useState<Date | null>(null);
+  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [day, setDay] = useState('');
   const [room, setRoom] = useState('');
 
@@ -62,17 +67,9 @@ export default function CreateScheduleScreen() {
 
   async function loadDropdowns() {
     try {
-      const [instRes, userRes] = await Promise.all([
-        fetchInstructors(),
-        fetchUsers(),
-      ]);
-
+      const [instRes, userRes] = await Promise.all([fetchInstructors(), fetchUsers()]);
       setInstructors(instRes || []);
-
-      // only keep users with role = "Checker"
-      const onlyCheckers = (userRes || []).filter(
-        (u: User) => u.role === 'Checker'
-      );
+      const onlyCheckers = (userRes || []).filter((u: User) => u.role === 'Checker');
       setCheckers(onlyCheckers);
     } catch (error) {
       console.error(error);
@@ -80,12 +77,28 @@ export default function CreateScheduleScreen() {
     }
   }
 
+  function formatDisplayTime(d: Date | null) {
+    if (!d) return '';
+    return d.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+  }
+
+  // ✅ Fixed: include AM/PM so backend accepts it
+  function formatBackendTime(d: Date) {
+    return d.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    }); 
+    // ex: "8:00 AM", "2:30 PM"
+  }
+
   async function handleSubmit() {
     if (
       !subjectCode ||
       !subject ||
       !block ||
-      !time ||
+      !startTime ||
+      !endTime ||
       !day ||
       !room ||
       !instructorId ||
@@ -95,13 +108,19 @@ export default function CreateScheduleScreen() {
       return;
     }
 
+    if (startTime && endTime && startTime >= endTime) {
+      Alert.alert('Validation Error', 'End time must be after start time');
+      return;
+    }
+
     try {
       setLoading(true);
       const res = await createSchedule({
         subject_code: subjectCode,
         subject,
         block,
-        time,
+        start_time: formatBackendTime(startTime), // ex: "8:00 AM"
+        end_time: formatBackendTime(endTime),     // ex: "2:00 PM"
         day,
         room,
         instructor_id: Number(instructorId),
@@ -124,46 +143,61 @@ export default function CreateScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header
-        title="Add Schedule"
-        onProfilePress={() => router.push('/(admin)/profile')}
-      />
+      <Header title="Add Schedule" onProfilePress={() => router.push('/(admin)/profile')} />
 
       <ScrollView contentContainerStyle={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Subject Code"
-          value={subjectCode}
-          onChangeText={setSubjectCode}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Subject"
-          value={subject}
-          onChangeText={setSubject}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Block"
-          value={block}
-          onChangeText={setBlock}
-        />
-        <TextInput
-          style={styles.input}
-          placeholder="Time"
-          value={time}
-          onChangeText={setTime}
-        />
+        <TextInput style={styles.input} placeholder="Subject Code" value={subjectCode} onChangeText={setSubjectCode} />
+        <TextInput style={styles.input} placeholder="Subject" value={subject} onChangeText={setSubject} />
+        <TextInput style={styles.input} placeholder="Block" value={block} onChangeText={setBlock} />
+
+        {/* Start Time */}
+        <Text style={styles.label}>Start Time</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowStartPicker(true)}>
+          <Text>{startTime ? formatDisplayTime(startTime) : 'Select Start Time'}</Text>
+        </TouchableOpacity>
+        {showStartPicker && (
+          <DateTimePicker
+            value={startTime || new Date()}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            is24Hour={false}
+            onChange={(event, selected) => {
+              if (Platform.OS === 'android') {
+                setShowStartPicker(false);
+                if (event.type === 'set' && selected) setStartTime(selected);
+              } else {
+                if (selected) setStartTime(selected);
+              }
+            }}
+          />
+        )}
+
+        {/* End Time */}
+        <Text style={styles.label}>End Time</Text>
+        <TouchableOpacity style={styles.input} onPress={() => setShowEndPicker(true)}>
+          <Text>{endTime ? formatDisplayTime(endTime) : 'Select End Time'}</Text>
+        </TouchableOpacity>
+        {showEndPicker && (
+          <DateTimePicker
+            value={endTime || new Date()}
+            mode="time"
+            display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+            is24Hour={false}
+            onChange={(event, selected) => {
+              if (Platform.OS === 'android') {
+                setShowEndPicker(false);
+                if (event.type === 'set' && selected) setEndTime(selected);
+              } else {
+                if (selected) setEndTime(selected);
+              }
+            }}
+          />
+        )}
 
         {/* Day Picker */}
         <Text style={styles.label}>Select Day</Text>
         <View style={styles.dropdownWrapper}>
-          <Picker
-            selectedValue={day}
-            onValueChange={(val) => setDay(val)}
-            style={styles.picker}
-            dropdownIconColor="#007AFF"
-          >
+          <Picker selectedValue={day} onValueChange={(val) => setDay(val)} style={styles.picker} dropdownIconColor="#007AFF">
             <Picker.Item label="-- Select Day --" value="" />
             <Picker.Item label="Monday" value="Monday" />
             <Picker.Item label="Tuesday" value="Tuesday" />
@@ -175,29 +209,15 @@ export default function CreateScheduleScreen() {
           </Picker>
         </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Room"
-          value={room}
-          onChangeText={setRoom}
-        />
+        <TextInput style={styles.input} placeholder="Room" value={room} onChangeText={setRoom} />
 
         {/* Instructor Dropdown */}
         <Text style={styles.label}>Select Instructor</Text>
         <View style={styles.dropdownWrapper}>
-          <Picker
-            selectedValue={instructorId}
-            onValueChange={(val) => setInstructorId(val)}
-            style={styles.picker}
-            dropdownIconColor="#007AFF"
-          >
+          <Picker selectedValue={instructorId} onValueChange={(val) => setInstructorId(val)} style={styles.picker} dropdownIconColor="#007AFF">
             <Picker.Item label="-- Select Instructor --" value="" />
             {instructors.map((inst) => (
-              <Picker.Item
-                key={inst.id}
-                label={inst.full_name}
-                value={inst.id.toString()}
-              />
+              <Picker.Item key={inst.id} label={inst.full_name} value={inst.id.toString()} />
             ))}
           </Picker>
         </View>
@@ -205,39 +225,21 @@ export default function CreateScheduleScreen() {
         {/* Checker Dropdown */}
         <Text style={styles.label}>Select Checker</Text>
         <View style={styles.dropdownWrapper}>
-          <Picker
-            selectedValue={checkerId}
-            onValueChange={(val) => setCheckerId(val)}
-            style={styles.picker}
-            dropdownIconColor="#007AFF"
-          >
+          <Picker selectedValue={checkerId} onValueChange={(val) => setCheckerId(val)} style={styles.picker} dropdownIconColor="#007AFF">
             <Picker.Item label="-- Select Checker --" value="" />
             {checkers.map((checker) => (
-              <Picker.Item
-                key={checker.id}
-                label={checker.full_name}
-                value={checker.id.toString()}
-              />
+              <Picker.Item key={checker.id} label={checker.full_name} value={checker.id.toString()} />
             ))}
           </Picker>
         </View>
 
         {/* Save Button */}
-        <TouchableOpacity
-          style={styles.submitButton}
-          onPress={handleSubmit}
-          disabled={loading}
-        >
-          <Text style={styles.submitText}>
-            {loading ? 'Saving...' : 'Save Schedule'}
-          </Text>
+        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit} disabled={loading}>
+          <Text style={styles.submitText}>{loading ? 'Saving...' : 'Save Schedule'}</Text>
         </TouchableOpacity>
 
         {/* Cancel Button */}
-        <TouchableOpacity
-          style={[styles.submitButton, styles.cancelButton]}
-          onPress={() => router.back()}
-        >
+        <TouchableOpacity style={[styles.submitButton, styles.cancelButton]} onPress={() => router.back()}>
           <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
       </ScrollView>

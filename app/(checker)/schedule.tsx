@@ -19,7 +19,8 @@ type Instructor = {
 };
 
 type ScheduleItem = {
-  time: string;
+  start_time: string;
+  end_time: string;
   subject_code: string;
   subject: string;
   room: string;
@@ -27,6 +28,18 @@ type ScheduleItem = {
   day: string;
   instructor: Instructor;
 };
+
+function formatTimeRange(start: string, end: string) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const sDate = new Date();
+  sDate.setHours(sh, sm);
+  const eDate = new Date();
+  eDate.setHours(eh, em);
+
+  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  return `${sDate.toLocaleTimeString([], opts)} - ${eDate.toLocaleTimeString([], opts)}`;
+}
 
 export default function ScheduleScreen() {
   const router = useRouter();
@@ -53,7 +66,7 @@ export default function ScheduleScreen() {
       }
 
       // Fetch today's schedules from backend
-      const res = await axios.get('https://b1kbhbuv1p.sharedwithexpose.com/api/checker/schedules', {
+      const res = await axios.get('https://testingapi.loca.lt/api/checker/schedules', {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -99,7 +112,7 @@ export default function ScheduleScreen() {
           scheduleItems.map((item, index) => (
             <View key={index} style={styles.scheduleItem}>
               <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{item.time}</Text>
+                <Text style={styles.timeText}>{formatTimeRange(item.start_time, item.end_time)}</Text>
               </View>
               <View style={styles.itemContent}>
                 <View style={styles.itemHeader}>

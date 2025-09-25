@@ -2,8 +2,9 @@ import Header from '@/components/ui/Header';
 import { deleteSchedule, fetchSchedules } from '@/services/scheduleApi';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -40,10 +41,23 @@ type ScheduleItem = {
   room: string;
   block: string;
   day: string;
-  time: string;
+  start_time: string; // updated
+  end_time: string;   // updated
   instructor: Instructor;
   checker?: Checker;
 };
+
+function formatTimeRange(start: string, end: string) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const sDate = new Date();
+  sDate.setHours(sh, sm);
+  const eDate = new Date();
+  eDate.setHours(eh, em);
+
+  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  return `${sDate.toLocaleTimeString([], opts)} - ${eDate.toLocaleTimeString([], opts)}`;
+}
 
 export default function CampScheduleScreen() {
   const router = useRouter();
@@ -85,7 +99,7 @@ export default function CampScheduleScreen() {
         onPress: async () => {
           try {
             await deleteSchedule(id);
-            loadSchedules();
+            await loadSchedules(); // ⬅️ ensures refresh after delete
           } catch (err) {
             Alert.alert('Error', 'Failed to delete schedule.');
           }
@@ -94,10 +108,18 @@ export default function CampScheduleScreen() {
     ]);
   };
 
+  // ⬅️ useFocusEffect to reload every time screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      loadSchedules();
+    }, [])
+  );
+
   const filteredSchedules = scheduleItems.filter((item) => {
+    const timeRange = formatTimeRange(item.start_time, item.end_time);
     return (
       (dayFilter === '' || item.day === dayFilter) &&
-      (timeFilter === '' || item.time === timeFilter) &&
+      (timeFilter === '' || timeRange === timeFilter) &&
       (roomFilter === '' || item.room.toLowerCase().includes(roomFilter.toLowerCase())) &&
       (blockFilter === '' || item.block.toLowerCase().includes(blockFilter.toLowerCase())) &&
       (instructorFilter === '' ||
@@ -124,10 +146,9 @@ export default function CampScheduleScreen() {
     'Sunday',
   ].map((d) => (typeof d === 'string' ? { label: d, value: d } : d));
 
-  const timeOptions = Array.from(new Set(scheduleItems.map((i) => i.time))).map((t) => ({
-    label: t,
-    value: t,
-  }));
+  const timeOptions = Array.from(
+    new Set(scheduleItems.map((i) => formatTimeRange(i.start_time, i.end_time)))
+  ).map((t) => ({ label: t, value: t }));
 
   useEffect(() => {
     loadSchedules();
@@ -210,7 +231,7 @@ export default function CampScheduleScreen() {
           filteredSchedules.map((item) => (
             <View key={item.id} style={styles.scheduleItem}>
               <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{item.time}</Text>
+                <Text style={styles.timeText}>{formatTimeRange(item.start_time, item.end_time)}</Text>
               </View>
               <View style={styles.itemContent}>
                 <View style={styles.itemHeader}>

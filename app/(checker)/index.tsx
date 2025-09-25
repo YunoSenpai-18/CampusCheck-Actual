@@ -14,6 +14,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+function formatTimeRange(start: string, end: string) {
+  const [sh, sm] = start.split(':').map(Number);
+  const [eh, em] = end.split(':').map(Number);
+  const sDate = new Date();
+  sDate.setHours(sh, sm);
+  const eDate = new Date();
+  eDate.setHours(eh, em);
+
+  const opts: Intl.DateTimeFormatOptions = { hour: 'numeric', minute: '2-digit' };
+  return `${sDate.toLocaleTimeString([], opts)} - ${eDate.toLocaleTimeString([], opts)}`;
+}
+
 export default function DashboardScreen() {
   const router = useRouter();
 
@@ -27,7 +39,7 @@ export default function DashboardScreen() {
 
   // Schedule
   const [scheduleList, setScheduleList] = useState<
-    { time: string; subjectCode: string; subject: string; room: string; block: string; day: string; instructor: string }[]
+    { start_time: string; end_time: string; subjectCode: string; subject: string; room: string; block: string; day: string; instructor: string }[]
   >([]);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
 
@@ -67,13 +79,14 @@ export default function DashboardScreen() {
       }
 
       // Fetch schedules for checker
-      const res = await axios.get('https://b1kbhbuv1p.sharedwithexpose.com/api/checker/schedules', {
+      const res = await axios.get('https://testingapi.loca.lt/api/checker/schedules', {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       // Map API data to dashboard format and slice first 2 items
       const schedules = res.data.map((item: any) => ({
-        time: item.time,
+        start_time: item.start_time,
+        end_time: item.end_time,
         subjectCode: item.subject_code,
         subject: item.subject,
         room: item.room,
@@ -153,7 +166,7 @@ export default function DashboardScreen() {
             <View style={styles.scheduleRow}>
               {scheduleList.map((sched, index) => (
                 <View key={index} style={styles.scheduleBox}>
-                  <Text style={styles.timeTextSchedule}>{sched.time}</Text>
+                  <Text style={styles.timeTextSchedule}>{formatTimeRange(sched.start_time, sched.end_time)}</Text>
                   <Text style={styles.subjectCode}>{sched.subjectCode} | {sched.subject}</Text>
                   <Text style={styles.room}>Room: {sched.room}</Text>
                   <Text style={styles.block}>Block: {sched.block}</Text>
