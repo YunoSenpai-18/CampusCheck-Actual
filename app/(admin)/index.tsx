@@ -2,8 +2,9 @@ import Header from '@/components/ui/Header';
 import { deleteInstructor, fetchInstructors } from '@/services/instructorApi';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -106,6 +107,12 @@ export default function InstructorScreen() {
     }, 2 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  useFocusEffect( 
+    useCallback(() => {
+      loadInstructors();
+    }, [])
+  );
 
   return (
     <SafeAreaView style={styles.container}>
