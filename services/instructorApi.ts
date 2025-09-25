@@ -26,7 +26,6 @@ export async function fetchInstructor(id: number) {
 }
 
 // CREATE: Add new instructor (with optional photo)
-// CREATE: Add new instructor (with optional photo)
 export async function createInstructor(data: any, photo?: any) {
   const token = await getToken();
 
