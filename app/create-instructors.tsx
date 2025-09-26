@@ -79,6 +79,7 @@ export default function CreateInstructorScreen() {
       />
 
       <ScrollView contentContainerStyle={styles.form}>
+        <Text style={styles.label}>Full Name</Text>
         <TextInput
           style={styles.input}
           placeholder="Full Name"
@@ -86,6 +87,7 @@ export default function CreateInstructorScreen() {
           onChangeText={setFullName}
         />
 
+        <Text style={styles.label}>Instructor ID</Text>
         <TextInput
           style={styles.input}
           placeholder="Instructor ID"
@@ -112,6 +114,7 @@ export default function CreateInstructorScreen() {
           </Picker>
         </View>
 
+        <Text style={styles.label}>Email</Text>
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -120,6 +123,7 @@ export default function CreateInstructorScreen() {
           keyboardType="email-address"
         />
 
+        <Text style={styles.label}>Phone</Text>
         <TextInput
           style={styles.input}
           placeholder="Phone"

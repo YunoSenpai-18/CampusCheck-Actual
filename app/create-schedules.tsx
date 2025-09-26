@@ -146,8 +146,11 @@ export default function CreateScheduleScreen() {
       <Header title="Add Schedule" onProfilePress={() => router.push('/(admin)/profile')} />
 
       <ScrollView contentContainerStyle={styles.form}>
+        <Text style={styles.label}>Subject Code</Text>
         <TextInput style={styles.input} placeholder="Subject Code" value={subjectCode} onChangeText={setSubjectCode} />
+        <Text style={styles.label}>Subject</Text>
         <TextInput style={styles.input} placeholder="Subject" value={subject} onChangeText={setSubject} />
+        <Text style={styles.label}>Block</Text>
         <TextInput style={styles.input} placeholder="Block" value={block} onChangeText={setBlock} />
 
         {/* Start Time */}
@@ -209,6 +212,7 @@ export default function CreateScheduleScreen() {
           </Picker>
         </View>
 
+        <Text style={styles.label}>Room</Text>
         <TextInput style={styles.input} placeholder="Room" value={room} onChangeText={setRoom} />
 
         {/* Instructor Dropdown */}
