@@ -13,7 +13,7 @@ const TAB_ITEMS = [
   { name: 'index', title: 'Dashboard', icon: 'home' },
   { name: 'face-recognition', title: 'Scanner', icon: 'camera' },
   { name: 'schedule', title: 'Schedule', icon: 'calendar' },
-  { name: 'attendance-record', title: 'Record', icon: 'people-outline' },
+  { name: 'attendance-record', title: 'Record', icon: 'clipboard-outline' },
   { name: 'profile', title: 'Profile', icon: 'person' },
 ];
 
