@@ -60,6 +60,12 @@ export default function RootLayout() {
             name="create-schedules"
             options={{ headerShown: false }}
           />
+
+          {/* Create page */}
+          <Stack.Screen
+            name="create-users"
+            options={{ headerShown: false }}
+          />
           
         </Stack>
         <StatusBar style="auto" />

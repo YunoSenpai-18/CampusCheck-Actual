@@ -12,7 +12,8 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 const ADMIN_TAB_ITEMS = [
   { name: 'index', title: 'Instructor', icon: 'school-outline' },
   { name: 'camp-schedule', title: 'Schedule', icon: 'calendar' },
-  { name: 'records', title: 'Records', icon: 'people-outline' },
+  { name: 'records', title: 'Records', icon: 'clipboard-outline' },
+  { name: 'user', title: 'Users', icon: 'people-outline' },
   { name: 'profile', title: 'Profile', icon: 'person' },
 ];
 
