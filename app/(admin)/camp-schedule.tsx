@@ -41,8 +41,8 @@ type ScheduleItem = {
   room: string;
   block: string;
   day: string;
-  start_time: string; // updated
-  end_time: string;   // updated
+  start_time: string;
+  end_time: string;
   instructor: Instructor;
   checker?: Checker;
 };
@@ -69,7 +69,6 @@ export default function CampScheduleScreen() {
   const [dayFilter, setDayFilter] = useState('');
   const [timeFilter, setTimeFilter] = useState('');
   const [roomFilter, setRoomFilter] = useState('');
-  const [blockFilter, setBlockFilter] = useState('');
   const [instructorFilter, setInstructorFilter] = useState('');
 
   const loadSchedules = async () => {
@@ -99,7 +98,7 @@ export default function CampScheduleScreen() {
         onPress: async () => {
           try {
             await deleteSchedule(id);
-            await loadSchedules(); // ⬅️ ensures refresh after delete
+            await loadSchedules();
           } catch (err) {
             Alert.alert('Error', 'Failed to delete schedule.');
           }
@@ -121,9 +120,7 @@ export default function CampScheduleScreen() {
       (dayFilter === '' || item.day === dayFilter) &&
       (timeFilter === '' || timeRange === timeFilter) &&
       (roomFilter === '' || item.room.toLowerCase().includes(roomFilter.toLowerCase())) &&
-      (blockFilter === '' || item.block.toLowerCase().includes(blockFilter.toLowerCase())) &&
-      (instructorFilter === '' ||
-        item.instructor?.full_name.toLowerCase().includes(instructorFilter.toLowerCase()))
+      (instructorFilter === '' || item.instructor?.full_name === instructorFilter)
     );
   });
 
@@ -131,7 +128,6 @@ export default function CampScheduleScreen() {
     setDayFilter('');
     setTimeFilter('');
     setRoomFilter('');
-    setBlockFilter('');
     setInstructorFilter('');
   };
 
@@ -150,6 +146,10 @@ export default function CampScheduleScreen() {
     new Set(scheduleItems.map((i) => formatTimeRange(i.start_time, i.end_time)))
   ).map((t) => ({ label: t, value: t }));
 
+  const instructorOptions = Array.from(
+    new Set(scheduleItems.map((i) => i.instructor?.full_name).filter(Boolean))
+  ).map((name) => ({ label: name!, value: name! }));
+
   useEffect(() => {
     loadSchedules();
     const interval = setInterval(() => {
@@ -167,10 +167,7 @@ export default function CampScheduleScreen() {
         <View style={{ flexDirection: 'column', gap: 10 }}>
           {/* Day Picker */}
           <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={dayFilter}
-              onValueChange={(value) => setDayFilter(value)}
-            >
+            <Picker selectedValue={dayFilter} onValueChange={(value) => setDayFilter(value)}>
               {dayOptions.map((opt) => (
                 <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
               ))}
@@ -179,12 +176,22 @@ export default function CampScheduleScreen() {
 
           {/* Time Picker */}
           <View style={styles.pickerWrapper}>
-            <Picker
-              selectedValue={timeFilter}
-              onValueChange={(value) => setTimeFilter(value)}
-            >
+            <Picker selectedValue={timeFilter} onValueChange={(value) => setTimeFilter(value)}>
               <Picker.Item label="All Times" value="" />
               {timeOptions.map((opt) => (
+                <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
+              ))}
+            </Picker>
+          </View>
+
+          {/* Instructor Picker */}
+          <View style={styles.pickerWrapper}>
+            <Picker
+              selectedValue={instructorFilter}
+              onValueChange={(value) => setInstructorFilter(value)}
+            >
+              <Picker.Item label="All Instructors" value="" />
+              {instructorOptions.map((opt) => (
                 <Picker.Item key={opt.value} label={opt.label} value={opt.value} />
               ))}
             </Picker>
@@ -196,20 +203,8 @@ export default function CampScheduleScreen() {
             value={roomFilter}
             onChangeText={setRoomFilter}
           />
-          <TextInput
-            style={styles.filterChip}
-            placeholder="Block"
-            value={blockFilter}
-            onChangeText={setBlockFilter}
-          />
-          <TextInput
-            style={styles.filterChip}
-            placeholder="Instructor"
-            value={instructorFilter}
-            onChangeText={setInstructorFilter}
-          />
 
-          {dayFilter || timeFilter || roomFilter || blockFilter || instructorFilter ? (
+          {dayFilter || timeFilter || roomFilter || instructorFilter ? (
             <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
               <Text style={styles.clearButtonText}>Clear</Text>
             </TouchableOpacity>
@@ -231,7 +226,9 @@ export default function CampScheduleScreen() {
           filteredSchedules.map((item) => (
             <View key={item.id} style={styles.scheduleItem}>
               <View style={styles.timeContainer}>
-                <Text style={styles.timeText}>{formatTimeRange(item.start_time, item.end_time)}</Text>
+                <Text style={styles.timeText}>
+                  {formatTimeRange(item.start_time, item.end_time)}
+                </Text>
               </View>
               <View style={styles.itemContent}>
                 <View style={styles.itemHeader}>
