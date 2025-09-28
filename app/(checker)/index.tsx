@@ -35,7 +35,6 @@ export default function DashboardScreen() {
 
   // Attendance
   const [attendanceCount, setAttendanceCount] = useState<number>(0);
-  const [attendanceRecords, setAttendanceRecords] = useState<{ name: string; status: string }[]>([]);
 
   // Schedule
   const [scheduleList, setScheduleList] = useState<
@@ -83,7 +82,7 @@ export default function DashboardScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // Map API data to dashboard format and slice first 2 items
+      // Map API data to dashboard format and slice first 4 items
       const schedules = res.data.map((item: any) => ({
         start_time: item.start_time,
         end_time: item.end_time,
@@ -93,7 +92,7 @@ export default function DashboardScreen() {
         block: item.block,
         day: item.day,
         instructor: item.instructor.full_name,
-      })).slice(0, 2);
+      })).slice(0, 4);
 
       setScheduleList(schedules);
     } catch (error) {
@@ -106,11 +105,6 @@ export default function DashboardScreen() {
   // Simulate fetching attendance for now
   useEffect(() => {
     setAttendanceCount(7);
-    setAttendanceRecords([
-      { name: 'Jelson V. Lanto', status: 'Present' },
-      { name: 'Yuri Rancudo', status: 'Present' },
-    ]);
-
     fetchCheckerSchedules();
   }, []);
 
@@ -136,21 +130,6 @@ export default function DashboardScreen() {
               style={{ marginRight: 16 }}
             />
             <Text style={styles.attendanceCount}>{attendanceCount}</Text>
-          </View>
-        </View>
-
-        {/* Attendance Record */}
-        <View style={styles.sectionCard}>
-          <TouchableOpacity onPress={() => router.push('/attendance-record')}>
-            <Text style={styles.sectionTitleBlue}>Attendance Record ➤</Text>
-          </TouchableOpacity>
-          <View style={styles.recordList}>
-            {attendanceRecords.slice(0, 4).map((record, index) => (
-              <View key={index} style={styles.recordRow}>
-                <Text style={styles.recordName}>{record.name}</Text>
-                <Text style={styles.presentLabel}>{record.status}</Text>
-              </View>
-            ))}
           </View>
         </View>
 
