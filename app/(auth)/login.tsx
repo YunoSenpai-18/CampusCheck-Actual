@@ -1,5 +1,6 @@
 import AuthButton from '@/components/auth/AuthButton';
 import AuthInput from '@/components/auth/AuthInput';
+import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useRouter } from 'expo-router';
@@ -13,6 +14,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TouchableOpacity,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -38,6 +40,7 @@ export default function LoginScreen() {
   const router = useRouter();
   const [schoolId, setSchoolId] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSignIn = useCallback(async () => {
@@ -113,15 +116,34 @@ export default function LoginScreen() {
                 autoCorrect={false}
               />
 
+            <View style={{ position: 'relative' }}>
               <AuthInput
                 label="Password"
                 placeholder={PASSWORD_PLACEHOLDER}
                 value={password}
                 onChangeText={setPassword}
-                secureTextEntry
+                secureTextEntry={!showPassword}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
+
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPressIn={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: 12,
+                  top: '66%',
+                  transform: [{ translateY: -10 }],
+                }}
+              >
+                <Ionicons
+                  name={showPassword ? 'eye-off' : 'eye'}
+                  size={22}
+                  color="#666"
+                />
+              </TouchableOpacity>
+            </View>
 
               <AuthButton
                 title={loading ? 'Signing In...' : 'Sign In'}

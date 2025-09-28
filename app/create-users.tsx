@@ -1,5 +1,6 @@
 import Header from '@/components/ui/Header';
 import { createUser } from '@/services/userApi';
+import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
@@ -25,6 +26,7 @@ export default function CreateUserScreen() {
   const [phone, setPhone] = useState('');
   const [role, setRole] = useState<'Checker' | 'Admin'>('Checker');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [photo, setPhoto] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
@@ -80,7 +82,10 @@ export default function CreateUserScreen() {
     <SafeAreaView style={styles.container}>
       <Header title="Create User" onProfilePress={() => router.push('/(admin)/profile')} />
 
-      <ScrollView contentContainerStyle={styles.form}>
+      <ScrollView 
+        contentContainerStyle={styles.form}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={styles.label}>Full Name</Text>
         <TextInput
           style={styles.input}
@@ -130,13 +135,33 @@ export default function CreateUserScreen() {
         </View>
 
         <Text style={styles.label}>Password</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <View style={{ position: 'relative' }}>
+            <TextInput
+              style={styles.input}
+              placeholder="Password"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry={!showPassword}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            <TouchableOpacity
+              activeOpacity={0.7}
+              onPressIn={() => setShowPassword(!showPassword)}
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: '38%',
+                transform: [{ translateY: -10 }],
+              }}
+            >
+              <Ionicons
+                name={showPassword ? 'eye-off' : 'eye'}
+                size={22}
+                color="#666"
+              />
+            </TouchableOpacity>
+          </View>
 
         {/* Photo Picker */}
         <Text style={styles.label}>Photo</Text>
