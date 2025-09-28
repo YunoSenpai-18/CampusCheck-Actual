@@ -6,6 +6,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -54,6 +55,7 @@ export default function ProfileScreen() {
           id: data.school_id,
           email: data.email,
           phone: data.phone,
+          photo_url: data.photo_url, // ✅ added
         });
       } catch (error) {
         console.error('Error fetching profile:', error);
@@ -100,7 +102,11 @@ export default function ProfileScreen() {
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           <View style={styles.profilePhoto}>
-            <Ionicons name="person" size={48} color="#666666" />
+            {profile.photo_url ? (
+              <Image source={{ uri: profile.photo_url }} style={styles.photoImg} />
+            ) : (
+              <Ionicons name="person" size={48} color="#666666" />
+            )}
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{profile.name}</Text>
@@ -183,6 +189,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden', // ✅ make sure image stays rounded
+  },
+  photoImg: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+    resizeMode: 'cover',
   },
   profileInfo: { flex: 1 },
   profileName: {

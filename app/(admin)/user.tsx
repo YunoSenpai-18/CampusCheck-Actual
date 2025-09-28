@@ -1,6 +1,7 @@
 import Header from '@/components/ui/Header';
 import { deleteUser, fetchUsers } from '@/services/userApi';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Picker } from '@react-native-picker/picker';
 import { useFocusEffect } from '@react-navigation/native';
 import { useRouter } from 'expo-router';
@@ -32,6 +33,7 @@ type User = {
 
 export default function UsersScreen() {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState<any>(null);
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -58,9 +60,36 @@ export default function UsersScreen() {
     }
   };
 
+  const fetchCurrentUser = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      const res = await fetch('https://testingapi.loca.lt/api/user', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          Accept: 'application/json',
+        },
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setCurrentUser({
+          id: data.school_id, // 👈 this matches ProfileScreen
+          name: data.full_name,
+          role: data.role,
+          email: data.email,
+        });
+      }
+    } catch (err) {
+      console.error('Error fetching current user:', err);
+    }
+  };
+
   const onRefresh = async () => {
     setRefreshing(true);
     await loadUsers();
+    await fetchCurrentUser();
     setRefreshing(false);
   };
 
@@ -96,6 +125,8 @@ export default function UsersScreen() {
 
   useEffect(() => {
     loadUsers();
+    fetchCurrentUser();
+
     const interval = setInterval(() => {
       loadUsers();
     }, 2 * 60 * 1000);
@@ -105,6 +136,7 @@ export default function UsersScreen() {
   useFocusEffect(
     useCallback(() => {
       loadUsers();
+      fetchCurrentUser();
     }, [])
   );
 
@@ -173,12 +205,14 @@ export default function UsersScreen() {
 
                 {/* Delete Button */}
                 <View style={styles.actions}>
-                  <TouchableOpacity
-                    style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
-                    onPress={() => handleDelete(user.id)}
-                  >
-                    <Text style={styles.actionText}>Delete</Text>
-                  </TouchableOpacity>
+                  {(!currentUser || currentUser.id !== user.school_id) && (
+                    <TouchableOpacity
+                      style={[styles.actionBtn, { backgroundColor: '#FF3B30' }]}
+                      onPress={() => handleDelete(user.id)}
+                    >
+                      <Text style={styles.actionText}>Delete</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               </View>
             </View>
