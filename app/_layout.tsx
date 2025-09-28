@@ -66,6 +66,24 @@ export default function RootLayout() {
             name="create-users"
             options={{ headerShown: false }}
           />
+
+          {/* Create page */}
+          <Stack.Screen
+            name="CreateFeedbackScreen"
+            options={{ headerShown: false }}
+          />
+
+          {/* Checker Feedback List */}
+          <Stack.Screen
+            name="FeedbackListScreen"
+            options={{ headerShown: false }}
+          />
+
+          {/* Admin Feedback List */}
+          <Stack.Screen
+            name="FeedbackDetailScreen"
+            options={{ headerShown: false }}
+          />
           
         </Stack>
         <StatusBar style="auto" />

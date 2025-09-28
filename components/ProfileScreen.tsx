@@ -68,8 +68,24 @@ export default function ProfileScreen() {
     fetchProfile();
   }, []);
 
+  const navigateByRole = () => {
+    if (!profile?.role) {
+      Alert.alert('Error', 'No role found for this user');
+      return;
+    }
+
+    if (profile.role === 'Admin') {
+      router.replace('/FeedbackDetailScreen');
+    } else if (profile.role === 'Checker') {
+      router.replace('/FeedbackListScreen');
+    } else {
+      Alert.alert('Error', 'Unknown role, cannot navigate');
+    }
+  };
+
   const menuItems = [
-    { id: 1, title: 'Logout', icon: 'log-out', color: '#dc3545' },
+    { id: 1, title: 'Feedback', icon: 'chatbox', color: '#007AFF', action: navigateByRole },
+    { id: 2, title: 'Logout', icon: 'log-out', color: '#dc3545' },
   ];
 
   if (loading) {
@@ -145,10 +161,16 @@ export default function ProfileScreen() {
         {/* Menu Items */}
         <View style={styles.menuSection}>
           {menuItems.map((item) => (
-            <TouchableOpacity
-              key={item.id}
+            <TouchableOpacity 
+              key={item.id} 
               style={styles.menuItem}
-              onPress={handleLogout}
+              onPress={() => {
+                if (item.id === 2) {
+                  handleLogout();
+                } else if (item.id === 1) {
+                  navigateByRole();
+                }
+              }}
             >
               <View style={styles.menuItemLeft}>
                 <Ionicons name={item.icon as any} size={24} color={item.color} />
