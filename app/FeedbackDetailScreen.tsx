@@ -64,34 +64,31 @@ export default function AdminFeedbackDetailScreen() {
   }, []);
 
   const renderItem = ({ item }: { item: FeedbackItem }) => (
-  <TouchableOpacity
-    style={styles.card}
-    onPress={() => {
-      setSelected(item);
-      setResponse(item.admin_response || '');
-    }}
-  >
-    <Text style={styles.message}>{item.message}</Text>
-    <Text style={styles.user}>From: {item.checker?.full_name || 'Unknown'}</Text>
-    <Text style={[styles.status, styles[item.status]]}>
-      {item.status}
-    </Text>
-
-    {/* Show admin response if it exists */}
-    {item.admin_response ? (
-      <Text style={styles.responseOnList}>
-        Response: {item.admin_response}
+    <TouchableOpacity
+      style={styles.card}
+      onPress={() => {
+        setSelected(item);
+        setResponse(item.admin_response || '');
+      }}
+    >
+      <Text style={styles.message}>{item.message}</Text>
+      <Text style={styles.user}>
+        From: {item.checker?.full_name || 'Unknown'}
       </Text>
-    ) : null}
-  </TouchableOpacity>
-);
+      <Text style={[styles.status, styles[item.status]]}>{item.status}</Text>
+
+      {/* Show admin response if it exists */}
+      {item.admin_response ? (
+        <Text style={styles.responseOnList}>
+          Response: {item.admin_response}
+        </Text>
+      ) : null}
+    </TouchableOpacity>
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      <Header
-        title="Manage Feedback"
-        onProfilePress={() => router.push('/(admin)/profile')}
-      />
+      <Header title="Manage Feedback" />
 
       {loading && !selected ? (
         <ActivityIndicator style={{ marginTop: 20 }} />
@@ -143,12 +140,19 @@ export default function AdminFeedbackDetailScreen() {
           contentContainerStyle={styles.list}
         />
       )}
+      {/* Bottom Back button with back-or-fallback logic */}
       <TouchableOpacity
-            style={[styles.addButton, { backgroundColor: '#555' }]}
-            onPress={() => router.replace('/(admin)/profile')}
-        >
-            <Text style={styles.addText}>Back</Text>
-        </TouchableOpacity>
+        style={[styles.addButton, { backgroundColor: '#555' }]}
+        onPress={() => {
+          if (router.canGoBack()) {
+            router.back();
+          } else {
+            router.replace('/(admin)/profile');
+          }
+        }}
+      >
+        <Text style={styles.addText}>Back</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }
@@ -184,7 +188,11 @@ const styles = StyleSheet.create({
     minHeight: 80,
     textAlignVertical: 'top',
   },
-  actions: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 20 },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
   button: {
     flex: 1,
     paddingVertical: 14,
@@ -206,9 +214,9 @@ const styles = StyleSheet.create({
   },
   addText: { color: '#fff', fontSize: 16, fontWeight: '600' },
   responseOnList: {
-  marginTop: 6,
-  fontSize: 13,
-  fontStyle: 'italic',
-  color: '#444',
-},
+    marginTop: 6,
+    fontSize: 13,
+    fontStyle: 'italic',
+    color: '#444',
+  },
 });
