@@ -1,6 +1,7 @@
 import Header from '@/components/ui/Header';
 import { fetchInstructors } from '@/services/instructorApi';
-import { createSchedule } from '@/services/scheduleApi';
+import { fetchRooms, Room } from '@/services/roomApi';
+import { createSchedule, SchedulePayload } from '@/services/scheduleApi';
 import { fetchUsers } from '@/services/userApi';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
@@ -54,6 +55,7 @@ export default function CreateScheduleScreen() {
   // dropdown data
   const [instructors, setInstructors] = useState<Instructor[]>([]);
   const [checkers, setCheckers] = useState<User[]>([]);
+  const [rooms, setRooms] = useState<Room[]>([]);
 
   // selected IDs
   const [instructorId, setInstructorId] = useState('');
@@ -67,10 +69,15 @@ export default function CreateScheduleScreen() {
 
   async function loadDropdowns() {
     try {
-      const [instRes, userRes] = await Promise.all([fetchInstructors(), fetchUsers()]);
+      const [instRes, userRes, roomRes] = await Promise.all([
+        fetchInstructors(),
+        fetchUsers(),
+        fetchRooms(),
+      ]);
       setInstructors(instRes || []);
       const onlyCheckers = (userRes || []).filter((u: User) => u.role === 'Checker');
       setCheckers(onlyCheckers);
+      setRooms(roomRes || []);
     } catch (error) {
       console.error(error);
       Alert.alert('Error', 'Failed to load dropdown data');
@@ -89,7 +96,6 @@ export default function CreateScheduleScreen() {
       minute: '2-digit',
       hour12: true,
     }); 
-    // ex: "8:00 AM", "2:30 PM"
   }
 
   async function handleSubmit() {
@@ -115,17 +121,19 @@ export default function CreateScheduleScreen() {
 
     try {
       setLoading(true);
-      const res = await createSchedule({
+      const payload: SchedulePayload = {
         subject_code: subjectCode,
         subject,
         block,
-        start_time: formatBackendTime(startTime), // ex: "8:00 AM"
-        end_time: formatBackendTime(endTime),     // ex: "2:00 PM"
+        start_time: formatBackendTime(startTime),
+        end_time: formatBackendTime(endTime),
         day,
-        room,
+        room_id: Number(room),
         instructor_id: Number(instructorId),
         assigned_checker_id: Number(checkerId),
-      });
+      };
+
+      const res = await createSchedule(payload);
 
       if (res?.id) {
         Alert.alert('Success', 'Schedule created successfully');
@@ -213,9 +221,32 @@ export default function CreateScheduleScreen() {
         </View>
 
         <Text style={styles.label}>Room</Text>
-        <TextInput style={styles.input} placeholder="Room" value={room} onChangeText={setRoom} />
+        <View style={styles.dropdownWrapper}>
+          <Picker
+            selectedValue={room}
+            onValueChange={(val) => {
+              setRoom(val);
+              const selectedRoom = rooms.find((r) => r.id.toString() === val);
+              if (selectedRoom?.checker?.id) {
+                setCheckerId(selectedRoom.checker.id.toString());
+              } else {
+                setCheckerId('');
+              }
+            }}
+            style={styles.picker}
+            dropdownIconColor="#007AFF"
+          >
+            <Picker.Item label="-- Select Room --" value="" />
+            {rooms.map((r) => (
+              <Picker.Item
+                key={r.id}
+                label={`${r.room_number} (${r.building?.name})`}
+                value={r.id.toString()}
+              />
+            ))}
+          </Picker>
+        </View>
 
-        {/* Instructor Dropdown */}
         <Text style={styles.label}>Select Instructor</Text>
         <View style={styles.dropdownWrapper}>
           <Picker selectedValue={instructorId} onValueChange={(val) => setInstructorId(val)} style={styles.picker} dropdownIconColor="#007AFF">

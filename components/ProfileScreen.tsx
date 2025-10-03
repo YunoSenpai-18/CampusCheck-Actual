@@ -83,8 +83,12 @@ export default function ProfileScreen() {
     }
   };
 
+  // ✅ Menu items with conditional Room Management for Admin only
   const menuItems = [
     { id: 1, title: 'Feedback', icon: 'chatbox', color: '#007AFF', action: navigateByRole },
+    ...(profile?.role === 'Admin'
+      ? [{ id: 3, title: 'Room Management', icon: 'business', color: '#28a745' }]
+      : []),
     { id: 2, title: 'Logout', icon: 'log-out', color: '#dc3545' },
   ];
 
@@ -169,6 +173,8 @@ export default function ProfileScreen() {
                   handleLogout();
                 } else if (item.id === 1) {
                   navigateByRole();
+                } else if (item.id === 3) {
+                  router.push('/RoomManagementScreen');
                 }
               }}
             >

@@ -23,7 +23,12 @@ type ScheduleItem = {
   end_time: string;
   subject_code: string;
   subject: string;
-  room: string;
+  room: {
+    id: number;
+    room_number: string;
+    building: { id: number; name: string };
+    checker?: { id: number; full_name: string } | null;
+  };
   block: string;
   day: string;
   instructor: Instructor;
@@ -118,7 +123,9 @@ export default function ScheduleScreen() {
                 <View style={styles.itemHeader}>
                   <Text style={styles.itemTitle}>{item.subject_code} | {item.subject}</Text>
                 </View>
-                <Text style={styles.itemLocation}>Room: {item.room}</Text>
+                <Text style={styles.itemLocation}>
+                  Room: {item.room.room_number} ({item.room.building?.name})
+                </Text>
                 <Text style={styles.itemLocation}>Block: {item.block}</Text>
                 <Text style={styles.itemLocation}>Day: {item.day}</Text>
                 <Text style={styles.itemDescription}>Instructor: {item.instructor.full_name}

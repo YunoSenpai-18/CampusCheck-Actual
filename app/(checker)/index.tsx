@@ -38,7 +38,16 @@ export default function DashboardScreen() {
 
   // Schedule
   const [scheduleList, setScheduleList] = useState<
-    { start_time: string; end_time: string; subjectCode: string; subject: string; room: string; block: string; day: string; instructor: string }[]
+    {
+      start_time: string;
+      end_time: string;
+      subjectCode: string;
+      subject: string;
+      room: { room_number: string; building: { name: string } }; // ✅ room is an object
+      block: string;
+      day: string;
+      instructor: string;
+    }[]
   >([]);
   const [loadingSchedules, setLoadingSchedules] = useState(true);
 
@@ -83,16 +92,21 @@ export default function DashboardScreen() {
       });
 
       // Map API data to dashboard format and slice first 4 items
-      const schedules = res.data.map((item: any) => ({
-        start_time: item.start_time,
-        end_time: item.end_time,
-        subjectCode: item.subject_code,
-        subject: item.subject,
-        room: item.room,
-        block: item.block,
-        day: item.day,
-        instructor: item.instructor.full_name,
-      })).slice(0, 4);
+      const schedules = res.data
+        .map((item: any) => ({
+          start_time: item.start_time,
+          end_time: item.end_time,
+          subjectCode: item.subject_code,
+          subject: item.subject,
+          room: {
+            room_number: item.room.room_number,
+            building: item.room.building,
+          }, // ✅ keep only what you need
+          block: item.block,
+          day: item.day,
+          instructor: item.instructor.full_name,
+        }))
+        .slice(0, 4);
 
       setScheduleList(schedules);
     } catch (error) {
@@ -147,7 +161,9 @@ export default function DashboardScreen() {
                 <View key={index} style={styles.scheduleBox}>
                   <Text style={styles.timeTextSchedule}>{formatTimeRange(sched.start_time, sched.end_time)}</Text>
                   <Text style={styles.subjectCode}>{sched.subjectCode} | {sched.subject}</Text>
-                  <Text style={styles.room}>Room: {sched.room}</Text>
+                  <Text style={styles.room}>
+                    Room: {sched.room.room_number} ({sched.room.building?.name})
+                  </Text>
                   <Text style={styles.block}>Block: {sched.block}</Text>
                   <Text style={styles.room}>Day: {sched.day}</Text>
                   <Text style={styles.instructor}>Instructor: {sched.instructor}</Text>

@@ -19,6 +19,18 @@ function formatTime(value: any) {
   return value; // already string
 }
 
+export type SchedulePayload = {
+  subject_code: string;
+  subject: string;
+  block: string;
+  start_time: string | Date;
+  end_time: string | Date;
+  day: string;
+  room_id: number;                // ✅ updated to use room_id
+  instructor_id: number;
+  assigned_checker_id: number | null;
+};
+
 // READ: Get all schedules
 export async function fetchSchedules() {
   const token = await getToken();
@@ -38,7 +50,7 @@ export async function fetchSchedule(id: number) {
 }
 
 // CREATE: Add new schedule
-export async function createSchedule(data: any) {
+export async function createSchedule(data: SchedulePayload) {
   const token = await getToken();
 
   const payload = {
@@ -66,7 +78,7 @@ export async function createSchedule(data: any) {
 }
 
 // UPDATE (not used for now — kept for future edit feature)
-export async function updateSchedule(id: number, data: any) {
+export async function updateSchedule(id: number, data: SchedulePayload) {
   const token = await getToken();
 
   const payload = {

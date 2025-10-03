@@ -1,4 +1,5 @@
 import Header from '@/components/ui/Header';
+import { fetchRooms } from '@/services/roomApi';
 import { deleteSchedule, fetchSchedules } from '@/services/scheduleApi';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
@@ -12,9 +13,8 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -38,7 +38,14 @@ type ScheduleItem = {
   id: number;
   subject_code: string;
   subject: string;
-  room: string;
+  room: {
+    id: number;
+    room_number: string;
+    building_id: number;
+    checker_id?: number | null;
+    building: { id: number; name: string };
+    checker?: { id: number; full_name: string } | null;
+  };
   block: string;
   day: string;
   start_time: string;
@@ -70,13 +77,17 @@ export default function CampScheduleScreen() {
   const [timeFilter, setTimeFilter] = useState('');
   const [roomFilter, setRoomFilter] = useState('');
   const [instructorFilter, setInstructorFilter] = useState('');
+  const [rooms, setRooms] = useState<{ id: number; room_number: string; building: { name: string } }[]>([]);
 
   const loadSchedules = async () => {
     try {
       const data = await fetchSchedules();
       setScheduleItems(data);
+
+      const roomData = await fetchRooms();
+      setRooms(roomData);
     } catch (error) {
-      console.error('Failed to fetch schedules:', error);
+      console.error('Failed to fetch schedules or rooms:', error);
       setScheduleItems([]);
     } finally {
       setLoading(false);
@@ -119,7 +130,7 @@ export default function CampScheduleScreen() {
     return (
       (dayFilter === '' || item.day === dayFilter) &&
       (timeFilter === '' || timeRange === timeFilter) &&
-      (roomFilter === '' || item.room.toLowerCase().includes(roomFilter.toLowerCase())) &&
+      (roomFilter === '' || item.room?.id === Number(roomFilter)) &&
       (instructorFilter === '' || item.instructor?.full_name === instructorFilter)
     );
   });
@@ -197,12 +208,19 @@ export default function CampScheduleScreen() {
             </Picker>
           </View>
 
-          <TextInput
-            style={styles.filterChip}
-            placeholder="Room"
-            value={roomFilter}
-            onChangeText={setRoomFilter}
-          />
+          {/* Room Picker */}
+          <View style={styles.pickerWrapper}>
+            <Picker selectedValue={roomFilter} onValueChange={(value) => setRoomFilter(value)}>
+              <Picker.Item label="All Rooms" value="" />
+              {rooms.map((r) => (
+                <Picker.Item
+                  key={r.id}
+                  label={`${r.room_number} (${r.building?.name})`}
+                  value={String(r.id)}
+                />
+              ))}
+            </Picker>
+          </View>
 
           {dayFilter || timeFilter || roomFilter || instructorFilter ? (
             <TouchableOpacity style={styles.clearButton} onPress={clearFilters}>
@@ -236,7 +254,7 @@ export default function CampScheduleScreen() {
                     {item.subject_code} | {item.subject}
                   </Text>
                 </View>
-                <Text style={styles.itemLocation}>Room: {item.room}</Text>
+                <Text style={styles.itemLocation}>Room: {item.room?.room_number} ({item.room?.building?.name})</Text>
                 <Text style={styles.itemLocation}>Block: {item.block}</Text>
                 <Text style={styles.itemLocation}>Day: {item.day}</Text>
                 <Text style={styles.itemDescription}>

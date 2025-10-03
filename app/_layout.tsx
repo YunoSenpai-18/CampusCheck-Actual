@@ -84,6 +84,12 @@ export default function RootLayout() {
             name="FeedbackDetailScreen"
             options={{ headerShown: false }}
           />
+
+          {/* Admin Room Management */}
+          <Stack.Screen
+            name="RoomManagementScreen"
+            options={{ headerShown: false }}
+          />
           
         </Stack>
         <StatusBar style="auto" />
